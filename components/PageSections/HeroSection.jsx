@@ -5,11 +5,11 @@ import { motion } from "framer-motion";
 
 export default function HeroSection() {
     return (
-        <section className="relative pt-20 pb-32 px-6 m-0">
+        <section className="relative pt-20 pb-32 px-6 m-0 bg-[#00000060]">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center text-center sm:text-left gap-12">
                 <div>
-                    <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-linear-to-r from-purple-600/20 to-pink-500/20 backdrop-blur-sm border border-purple-500/30">
-                        <div className="w-2 h-2 rounded-full bg-linear-to-r from-purple-400 to-pink-400 animate-pulse" />
+                    <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-linear-to-r from-blue-300/10 to-rose-500/10 backdrop-blur-sm border border-yellow-500/20">
+                        <div className="w-2 h-2 rounded-full bg-linear-to-r from-purple-600 to-blue-400 animate-pulse" />
                         <span className="text-sm font-medium bg-linear-to-r from-purple-200 to-pink-200 bg-clip-text text-transparent">
                             NEXT-GEN RESUME PLATFORM
                         </span>
@@ -21,7 +21,7 @@ export default function HeroSection() {
                                     REDEFINED
                                 </span>
                                 <span className="block"></span>
-                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">RESUME</span>
+                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">DOCUMENT</span>
 
                             </h1>
 
@@ -33,6 +33,7 @@ export default function HeroSection() {
                                 Quantum parsing meets cosmic design.
                             </p>
 
+                            {/* Button Section */}
                             <PdfUpload />
                         </div>
                     </div>

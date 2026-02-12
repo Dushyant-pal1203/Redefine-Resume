@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Palette, Save, Printer } from "lucide-react";
-import ResumeEditor from '@/components/ResumeEditor';
-import LivePreview from '@/components/LivePreview';
-import { ArrowLeft } from "lucide-react";
+import { Palette, Save, Printer, ArrowLeft } from "lucide-react";
+import ResumeEditor from '@/components/EditorSection/ResumeEditor';
+import LivePreview from '@/components/EditorSection/LivePreview';
 import { useReactToPrint } from "react-to-print";
+import { useSaveResume } from "@/hooks/use-resumes";
 
-export default function EditorPage() {
+function EditorContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { mutate: saveResume, isLoading: isSaving } = useSaveResume();
 
     const [resumeData, setResumeData] = useState({
         full_name: '',
@@ -26,25 +27,32 @@ export default function EditorPage() {
         projects: []
     });
 
-    const [template] = useState('modern');
-    const [isLoading, setIsLoading] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState('modern');
     const [saveMessage, setSaveMessage] = useState('');
+    const [resumeId, setResumeId] = useState(null);
 
     // Check for data in URL (from HeroSection upload)
     useEffect(() => {
         const dataParam = searchParams.get('data');
+        const templateParam = searchParams.get('template');
+        const idParam = searchParams.get('resumeId');
+
+        if (templateParam) {
+            setSelectedTemplate(templateParam);
+        }
+
+        if (idParam) {
+            setResumeId(idParam);
+        }
+
         if (dataParam) {
             try {
                 const parsedData = JSON.parse(decodeURIComponent(dataParam));
                 console.log('📥 Data from URL:', parsedData);
 
-                // Ensure all arrays are properly formatted
                 const processedData = {
-                    full_name: parsedData.full_name || '',
-                    email: parsedData.email || '',
-                    phone: parsedData.phone || '',
-                    location: parsedData.location || '',
-                    professional_summary: parsedData.professional_summary || '',
+                    ...parsedData,
+                    resume_id: idParam || parsedData.resume_id || parsedData.id,
                     experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
                     education: Array.isArray(parsedData.education) ? parsedData.education : [],
                     skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
@@ -65,7 +73,6 @@ export default function EditorPage() {
     const handlePDFUpload = (parsedData) => {
         console.log('📄 PDF Upload - Parsed Data:', parsedData);
 
-        // Process the parsed data to ensure proper structure
         const processedData = {
             full_name: parsedData.full_name || '',
             email: parsedData.email || '',
@@ -78,7 +85,6 @@ export default function EditorPage() {
             projects: Array.isArray(parsedData.projects) ? parsedData.projects : []
         };
 
-        // Fill empty arrays with at least one empty item
         if (processedData.experience.length === 0) {
             processedData.experience = [{ company: '', position: '', duration: '' }];
         }
@@ -96,44 +102,38 @@ export default function EditorPage() {
     };
 
     const handleSave = async () => {
-        setIsLoading(true);
         setSaveMessage('');
 
         try {
-            const response = await fetch('http://localhost:5000/api/resume', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(resumeData)
-            });
+            const dataToSave = {
+                ...resumeData,
+                template: selectedTemplate,
+                resume_id: resumeId
+            };
 
-            const data = await response.json();
+            const result = await saveResume(dataToSave);
 
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
+            if (result.data?.resume_id) {
+                setResumeId(result.data.resume_id);
             }
 
-            console.log('💾 Saved successfully:', data);
             setSaveMessage('✅ Resume saved successfully!');
-
-            // Clear message after 3 seconds
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (error) {
             console.error('❌ Save failed:', error);
             setSaveMessage('❌ Error saving resume. Please check server connection.');
-        } finally {
-            setIsLoading(false);
         }
     };
 
+    const handleTemplateChange = (e) => {
+        setSelectedTemplate(e.target.value);
+    };
+
     // Handle print/PDF
-    const [title, setTitle] = useState("My Resume");
     const printRef = useRef(null);
     const handlePrint = useReactToPrint({
         contentRef: printRef,
-        documentTitle: title || "Resume",
+        documentTitle: "My Resume",
     });
 
     return (
@@ -147,7 +147,7 @@ export default function EditorPage() {
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="hidden md:flex text-slate-400  hover:bg-transparent group"
+                                    className="hidden md:flex text-slate-400 hover:bg-transparent group"
                                 >
                                     <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform hover:text-black" />
                                 </Button>
@@ -157,47 +157,47 @@ export default function EditorPage() {
                                 className="h-6 hidden md:flex bg-slate-700"
                             />
                             <div className="flex items-center gap-4">
-                                {/* <h1 className="text-2xl font-bold text-gray-800">Resume Builder</h1> */}
-
                                 <input
                                     type="text"
                                     className="px-3 py-2 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
                                     placeholder="Resume Title"
+                                    defaultValue={resumeData.full_name ? `${resumeData.full_name}'s Resume` : 'My Resume'}
                                 />
                             </div>
                             {/* Template Selector */}
                             <div className="hidden md:flex items-center gap-2">
                                 <Palette className="w-4 h-4 text-gray-500" />
                                 <select
+                                    value={selectedTemplate}
+                                    onChange={handleTemplateChange}
                                     className="px-3 py-2 border border-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 bg-transparent"
-                                    defaultValue=""
-                                    onChange={(e) => {
-                                        console.log("Selected template:", e.target.value);
-                                    }}
                                 >
-                                    <option value="" disabled>
-                                        Select template
-                                    </option>
-                                    <option value="template1">Template 1</option>
-                                    <option value="template2">Template 2</option>
-                                    <option value="template3">Template 3</option>
+                                    <option value="modern">Modern</option>
+                                    <option value="minimal">Minimal</option>
+                                    <option value="creative">Creative</option>
                                 </select>
                             </div>
                         </div>
 
                         <div className="flex items-center justify-between flex-1">
-                            {/* Viewport Controls - Desktop */}
-                            <div className="hidden md:flex items-center gap-1 bg-transparent p-1 rounded-lg">
-
-                            </div>
-
                             {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
-                                <Button onClick={handleSave} variant="outline" size="sm" className="flex items-center border border-white justify-center rounded-md px-4 py-3 text-[14px] font-bold bg-linear-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 group hover:text-black">
+                            <div className="flex items-center gap-2 ml-auto">
+                                <Button
+                                    onClick={handleSave}
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex items-center border border-white justify-center rounded-md px-4 py-3 text-[14px] font-bold bg-linear-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 group hover:text-black"
+                                    disabled={isSaving}
+                                >
                                     <Save className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
-                                    Save
+                                    {isSaving ? 'Saving...' : 'Save'}
                                 </Button>
-                                <Button onClick={handlePrint} variant="default" size="sm" className="flex items-center border border-white justify-center rounded-md px-4 py-3 text-[14px] font-bold bg-linear-to-r from-cyan-600 to-blue-500 hover:from-cyan-700 hover:to-blue-600 group hover:text-black">
+                                <Button
+                                    onClick={handlePrint}
+                                    variant="default"
+                                    size="sm"
+                                    className="flex items-center border border-white justify-center rounded-md px-4 py-3 text-[14px] font-bold bg-linear-to-r from-cyan-600 to-blue-500 hover:from-cyan-700 hover:to-blue-600 group hover:text-black"
+                                >
                                     <Printer className="mr-3 h-5 w-5 group-hover:rotate-180 transition-transform duration-500" />
                                     Print/PDF
                                 </Button>
@@ -206,6 +206,7 @@ export default function EditorPage() {
                     </div>
                 </div>
             </header>
+
             {/* Main Content */}
             <div className="flex h-screen bg-gray-900">
                 {/* Left Panel - Editor */}
@@ -218,54 +219,29 @@ export default function EditorPage() {
                 </div>
 
                 {/* Right Panel - Preview */}
-                <div className="w-2/3">
+                <div className="w-2/3" ref={printRef}>
                     <LivePreview
                         resumeData={resumeData}
-                        template={template}
+                        template={selectedTemplate}
                     />
                 </div>
-
-                {/* Save Button */}
-                <button
-                    onClick={handleSave}
-                    disabled={isLoading}
-                    className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                    {isLoading ? (
-                        <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                            Saving...
-                        </>
-                    ) : (
-                        '💾 Save Resume'
-                    )}
-                </button>
-
-                {/* Back Button */}
-                <button
-                    onClick={() => router.push('/')}
-                    className="fixed top-6 left-6 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 border border-gray-700"
-                >
-                    ← Back to Home
-                </button>
-
-                {/* Save Message */}
-                {saveMessage && (
-                    <div className={`fixed top-6 right-6 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${saveMessage.includes('✅') ? 'bg-green-900/90 border border-green-700' : 'bg-red-900/90 border border-red-700'
-                        } text-white backdrop-blur-sm`}>
-                        {saveMessage.includes('✅') ? '✅' : '❌'}
-                        {saveMessage.replace('✅', '').replace('❌', '')}
-                    </div>
-                )}
-
-                {/* Status Indicator */}
-                <div className="fixed bottom-6 left-6 bg-gray-800/80 backdrop-blur-sm text-gray-300 text-sm px-3 py-2 rounded-lg border border-gray-700">
-                    <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${saveMessage.includes('✅') ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                        <span>Auto-save: {saveMessage.includes('✅') ? 'Saved' : 'Ready'}</span>
-                    </div>
-                </div>
             </div>
+
+            {/* Save Message */}
+            {saveMessage && (
+                <div className={`fixed top-6 right-6 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${saveMessage.includes('✅') ? 'bg-green-900/90 border border-green-700' : 'bg-red-900/90 border border-red-700'
+                    } text-white backdrop-blur-sm z-50`}>
+                    {saveMessage}
+                </div>
+            )}
         </>
+    );
+}
+
+export default function EditorPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <EditorContent />
+        </Suspense>
     );
 }

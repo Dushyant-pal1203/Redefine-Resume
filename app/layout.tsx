@@ -20,7 +20,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body suppressHydrationWarning={true}>
+        {" "}
+        {/* Add this prop */}
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />
