@@ -43,7 +43,7 @@ export default function Navbar() {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-linear-to-r from-purple-400 to-cyan-300">
-                                REDEFINED DOCUMENT
+                                REDEFINED RESUME
                             </span>
                             <span className='text-sm text-gray-200'>Elevate Your Career Path</span>
                         </div>

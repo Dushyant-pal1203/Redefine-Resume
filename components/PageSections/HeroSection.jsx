@@ -21,7 +21,7 @@ export default function HeroSection() {
                                     REDEFINED
                                 </span>
                                 <span className="block"></span>
-                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">DOCUMENT</span>
+                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">RESUME</span>
 
                             </h1>
 
