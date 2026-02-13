@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { FileUp } from "lucide-react";
+import { useUploadResume } from "@/hooks/use-resumes";
 
 export default function ResumeEditor({ resumeData, onUpdate, onPDFUpload }) {
     const [formData, setFormData] = useState({
@@ -17,7 +17,7 @@ export default function ResumeEditor({ resumeData, onUpdate, onPDFUpload }) {
         projects: [{ name: '', description: '', technologies: '' }]
     });
 
-    const [isUploading, setIsUploading] = useState(false);
+    const { mutate: uploadResume, isLoading: isUploading } = useUploadResume();
 
     // Update form when resumeData changes
     useEffect(() => {
@@ -111,32 +111,25 @@ export default function ResumeEditor({ resumeData, onUpdate, onPDFUpload }) {
             return;
         }
 
-        setIsUploading(true);
-        const formDataObj = new FormData();
-        formDataObj.append('resume', file);
-
         try {
-            console.log('📤 Uploading PDF to server...');
-            const response = await axios.post('http://localhost:5000/api/upload/pdf', formDataObj, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            console.log('📤 Uploading PDF using hook...');
+            const response = await uploadResume(file);
 
-            if (response.data.success) {
-                console.log('✅ PDF parsed successfully:', response.data.data);
-                onPDFUpload(response.data.data);
+            if (response?.data) {
+                console.log('✅ PDF parsed successfully:', response.data);
+                onPDFUpload(response.data);
+            } else if (response?.success && response?.data) {
+                console.log('✅ PDF parsed successfully:', response.data);
+                onPDFUpload(response.data);
             } else {
-                throw new Error(response.data.error || 'Upload failed');
+                throw new Error('Invalid response format from server');
             }
 
             // Reset file input
             e.target.value = '';
         } catch (error) {
             console.error('❌ Upload failed:', error);
-            alert(`Failed to parse PDF: ${error.message}\n\nMake sure the backend server is running on http://localhost:5000`);
-        } finally {
-            setIsUploading(false);
+            alert(`Failed to parse PDF: ${error.message}\n\nMake sure the backend server is running`);
         }
     };
 
@@ -175,7 +168,7 @@ export default function ResumeEditor({ resumeData, onUpdate, onPDFUpload }) {
                     <div className="text-gray-400 text-sm space-y-2">
                         <p>• Upload your resume PDF to automatically fill all fields below</p>
                         <p>• Supported: Single-page PDF resumes with clear text</p>
-                        {/* <p className="text-yellow-400">• Make sure backend server is running on http://localhost:5000</p> */}
+                        <p className="text-yellow-400">• Make sure backend server is running</p>
                     </div>
                 </div>
             </div>

@@ -1,44 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
+
+const ToastContext = React.createContext(null);
+
+let toastId = 0;
+
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = React.useState([]);
+
+  const dismiss = React.useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const toast = React.useCallback(
+    ({ title, description, variant = "default", duration = 5000, action }) => {
+      const id = ++toastId;
+
+      setToasts((prev) => [
+        ...prev,
+        { id, title, description, variant, duration, action },
+      ]);
+
+      return id;
+    },
+    [],
+  );
+
+  return (
+    <ToastContext.Provider value={{ toast, dismiss, toasts }}>
+      {children}
+    </ToastContext.Provider>
+  );
+}
 
 export function useToast() {
-  const [toasts, setToasts] = useState([]);
-
-  const toast = ({
-    title,
-    description,
-    action,
-    className,
-    variant = "default",
-  }) => {
-    const id = Date.now();
-
-    // In a real app, you'd integrate with a toast library
-    // For now, we'll just console.log and use alert
-    console.log(`🍞 Toast: ${title} - ${description}`);
-
-    // Show browser notification
-    if (title || description) {
-      const message = `${title}\n${description}`;
-
-      if (variant === "destructive") {
-        alert(`❌ ${message}`);
-      } else {
-        alert(`✅ ${message}`);
-      }
-    }
-
-    setToasts((prev) => [
-      ...prev,
-      { id, title, description, action, className, variant },
-    ]);
-
-    // Auto dismiss after 5 seconds
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 5001);
-  };
-
-  return { toast, toasts };
+  const context = React.useContext(ToastContext);
+  if (!context) {
+    throw new Error("useToast must be used within ToastProvider");
+  }
+  return context;
 }

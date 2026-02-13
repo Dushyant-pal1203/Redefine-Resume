@@ -1,6 +1,6 @@
 "use client";
 
-import PdfUpload from "@/components/Sections/PdfUpload";
+import PdfUpload from "@/components/FunctionComponent/PdfUpload";
 import { motion } from "framer-motion";
 
 export default function HeroSection() {

@@ -1,9 +1,9 @@
-// app/layout.tsx
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Sections/Navbar";
-import Footer from "@/components/Sections/Footer";
+import Navbar from "@/components/MainSections/Navbar";
+import Footer from "@/components/MainSections/Footer";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,17 +15,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true}>
-        {" "}
-        {/* Add this prop */}
-        <Navbar />
-        <main className="min-h-screen">{children}</main>
-        <Footer />
+      <body className={inter.className} suppressHydrationWarning>
+        <Providers>
+          <Navbar />
+          <main className="min-h-screen">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );
