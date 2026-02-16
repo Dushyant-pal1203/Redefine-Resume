@@ -5,6 +5,7 @@ import { useToast } from "./use-toast";
 
 const API_BASE = "http://localhost:5001/api/resume";
 const API_BASE_PDF = "http://localhost:5001/api/upload/pdf";
+const API_BASE_PDF_GENERATE = "http://localhost:5001/api/pdf/generate"; // Fixed: removed extra quotes
 
 /* =====================================================
    GET ALL RESUMES
@@ -300,4 +301,64 @@ export function useUploadResume() {
   };
 
   return { mutate: uploadResume, isLoading };
+}
+
+/* =====================================================
+   GENERATE PDF (PDF)
+===================================================== */
+export function useGeneratePDF() {
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const generatePDF = async (resumeData, template = "modern") => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(API_BASE_PDF_GENERATE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeData, template }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to generate PDF");
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+
+      if (blob.size === 0) {
+        throw new Error("Generated PDF is empty");
+      }
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${resumeData.full_name || "resume"}-${template}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "✅ PDF Generated",
+        description: "Your resume PDF is ready!",
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.error("❌ PDF Generation Error:", err);
+      toast({
+        title: "❌ Generation Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { mutate: generatePDF, isLoading };
 }

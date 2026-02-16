@@ -1,22 +1,25 @@
+// app/editor/page.jsx
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Palette, Save, Printer, ArrowLeft, Sparkles, FileText, Zap, CheckCircle, BookType } from "lucide-react";
+import { Palette, Save, ArrowLeft, Sparkles, FileText, CheckCircle, BookType, Loader2 } from "lucide-react";
 import ResumeEditor from '@/components/EditorSection/ResumeEditor';
 import LivePreview from '@/components/EditorSection/LivePreview';
-import { useReactToPrint } from "react-to-print";
 import { useSaveResume } from "@/hooks/use-resumes";
+import { useTemplates } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import DownloadPDF from '@/components/FunctionComponent/DownloadPDF';
 
 function EditorContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const saveResumeHook = useSaveResume();
+    const { templates, isLoading: templatesLoading } = useTemplates();
     const { toast } = useToast();
 
     const saveResume = saveResumeHook?.mutateAsync || saveResumeHook?.mutate;
@@ -42,13 +45,33 @@ function EditorContent() {
     const [isAutoTitleEnabled, setIsAutoTitleEnabled] = useState(true);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
-    // ✅ Add a ref to track if data has been loaded
     const hasLoadedData = useRef(false);
+    const pendingToast = useRef(null);
+    const mountedRef = useRef(true);
+    const downloadRef = useRef(null);
 
-    const printRef = useRef(null);
+    // Set mounted ref
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
-    // Generate creative title suggestions based on name and profession
-    const getTitleSuggestions = () => {
+    // Safe toast function - prevents updates during render
+    const showToast = useCallback((props) => {
+        if (pendingToast.current) {
+            clearTimeout(pendingToast.current);
+        }
+
+        pendingToast.current = setTimeout(() => {
+            if (mountedRef.current) {
+                toast(props);
+            }
+        }, 0);
+    }, [toast]);
+
+    const getTitleSuggestions = useCallback(() => {
         const name = resumeData.full_name || 'Professional';
         const firstName = name.split(' ')[0] || 'Professional';
 
@@ -60,32 +83,45 @@ function EditorContent() {
             `Resume of ${name}`,
             `${firstName} - Tech Portfolio`
         ];
-    };
+    }, [resumeData.full_name]);
 
     // Auto-update resume_title when full_name changes AND auto-title is enabled
     useEffect(() => {
-        if (isAutoTitleEnabled && resumeData.full_name && !hasInitializedTitle) {
-            const newTitle = `${resumeData.full_name.split(' ')[0]}'s Resume`;
-            setResumeTitle(newTitle);
+        if (isAutoTitleEnabled && resumeData.full_name && !hasInitializedTitle && mountedRef.current) {
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    const newTitle = `${resumeData.full_name.split(' ')[0]}'s Resume`;
+                    setResumeTitle(newTitle);
+                }
+            });
         }
     }, [resumeData.full_name, isAutoTitleEnabled, hasInitializedTitle]);
 
-    // ✅ FIXED: Prevent duplicate toasts with useRef
+    // Load data from URL params
     useEffect(() => {
+        if (hasLoadedData.current || !mountedRef.current) return;
+
         const dataParam = searchParams.get('data');
         const templateParam = searchParams.get('template');
         const idParam = searchParams.get('resumeId');
 
-        if (templateParam) {
-            setSelectedTemplate(templateParam);
+        if (templateParam && templateParam !== selectedTemplate) {
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    setSelectedTemplate(templateParam);
+                }
+            });
         }
 
-        if (idParam) {
-            setResumeId(idParam);
+        if (idParam && idParam !== resumeId) {
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    setResumeId(idParam);
+                }
+            });
         }
 
         if (dataParam && !hasLoadedData.current) {
-            // Mark as loaded immediately to prevent duplicate processing
             hasLoadedData.current = true;
 
             try {
@@ -101,45 +137,53 @@ function EditorContent() {
                     projects: Array.isArray(parsedData.projects) ? parsedData.projects : []
                 };
 
-                setResumeData(processedData);
+                queueMicrotask(() => {
+                    if (mountedRef.current) {
+                        setResumeData(processedData);
+                    }
+                });
 
-                // Set title from parsed data if available
-                if (parsedData.resume_title) {
-                    setResumeTitle(parsedData.resume_title);
-                    setHasInitializedTitle(true);
-                } else if (parsedData.title) {
-                    setResumeTitle(parsedData.title);
-                    setHasInitializedTitle(true);
+                if (parsedData.resume_title || parsedData.title) {
+                    queueMicrotask(() => {
+                        if (mountedRef.current) {
+                            setResumeTitle(parsedData.resume_title || parsedData.title);
+                            setHasInitializedTitle(true);
+                        }
+                    });
                 }
 
-                // ✅ Show toast only once
-                toast({
+                showToast({
                     title: "✨ Resume Loaded Successfully",
                     description: "Your resume data has been loaded and is ready for editing.",
                     variant: "default",
                 });
             } catch (error) {
                 console.error('❌ Error parsing URL data:', error);
-                toast({
+                hasLoadedData.current = false;
+
+                showToast({
                     title: "⚠️ Load Failed",
                     description: "Failed to load resume data from URL. Please try again.",
                     variant: "destructive",
                 });
             }
         }
-    }, [searchParams, toast]); // ✅ Removed hasLoadedData from dependencies
+    }, [searchParams, selectedTemplate, resumeId, showToast]);
 
-    const handleUpdate = (data) => {
+    const handleUpdate = useCallback((data) => {
         setResumeData(data);
 
-        // When full_name changes and auto-title is enabled, update the title
-        if (data.full_name && isAutoTitleEnabled && !hasInitializedTitle) {
-            const newFirstName = data.full_name.split(' ')[0];
-            setResumeTitle(`${newFirstName}'s Resume`);
+        if (data.full_name && isAutoTitleEnabled && !hasInitializedTitle && mountedRef.current) {
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    const newFirstName = data.full_name.split(' ')[0];
+                    setResumeTitle(`${newFirstName}'s Resume`);
+                }
+            });
         }
-    };
+    }, [isAutoTitleEnabled, hasInitializedTitle]);
 
-    const handlePDFUpload = (parsedData) => {
+    const handlePDFUpload = useCallback((parsedData) => {
         console.log('📄 PDF Upload - Parsed Data:', parsedData);
 
         const processedData = {
@@ -167,32 +211,40 @@ function EditorContent() {
             processedData.projects = [{ name: '', description: '', technologies: '' }];
         }
 
-        setResumeData(processedData);
+        queueMicrotask(() => {
+            if (mountedRef.current) {
+                setResumeData(processedData);
+            }
+        });
 
-        // Set title from parsed data or create from name
-        if (parsedData.resume_title) {
-            setResumeTitle(parsedData.resume_title);
-            setHasInitializedTitle(true);
-        } else if (parsedData.title) {
-            setResumeTitle(parsedData.title);
-            setHasInitializedTitle(true);
+        if (parsedData.resume_title || parsedData.title) {
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    setResumeTitle(parsedData.resume_title || parsedData.title);
+                    setHasInitializedTitle(true);
+                }
+            });
         } else if (parsedData.full_name) {
-            const firstName = parsedData.full_name.split(' ')[0];
-            setResumeTitle(`${firstName}'s Resume`);
-            setHasInitializedTitle(true);
+            queueMicrotask(() => {
+                if (mountedRef.current) {
+                    const firstName = parsedData.full_name.split(' ')[0];
+                    setResumeTitle(`${firstName}'s Resume`);
+                    setHasInitializedTitle(true);
+                }
+            });
         }
 
-        toast({
+        showToast({
             title: "📄 PDF Upload Successful",
             description: "Your resume has been successfully parsed from PDF.",
             variant: "default",
         });
-    };
+    }, [showToast]);
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!saveResume) {
             console.error('❌ saveResume function is not available');
-            toast({
+            showToast({
                 title: "❌ Save Failed",
                 description: "Save function is not available. Please check your connection.",
                 variant: "destructive",
@@ -226,14 +278,22 @@ function EditorContent() {
 
             const newResumeId = result?.data?.resume_id || result?.resume_id || result?.id;
             if (newResumeId) {
-                setResumeId(newResumeId);
-                setHasInitializedTitle(true);
+                queueMicrotask(() => {
+                    if (mountedRef.current) {
+                        setResumeId(newResumeId);
+                        setHasInitializedTitle(true);
+                    }
+                });
             }
 
             setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 2000);
+            setTimeout(() => {
+                if (mountedRef.current) {
+                    setSaveSuccess(false);
+                }
+            }, 2000);
 
-            toast({
+            showToast({
                 title: "✨ Save Successful!",
                 description: "Your resume has been saved successfully.",
                 variant: "default",
@@ -241,95 +301,110 @@ function EditorContent() {
         } catch (error) {
             console.error('❌ Save failed:', error);
 
-            toast({
+            showToast({
                 title: "❌ Save Failed",
                 description: error?.message || "Failed to save resume. Please check your connection.",
                 variant: "destructive",
             });
         }
-    };
+    }, [saveResume, saveResumeHook, resumeData, selectedTemplate, resumeId, resumeTitle, firstName, showToast]);
 
-    const handleTemplateChange = (e) => {
+    const handleTemplateChange = useCallback((e) => {
         const newTemplate = e.target.value;
         setSelectedTemplate(newTemplate);
 
-        toast({
+        showToast({
             title: "🎨 Template Changed",
             description: `Switched to ${newTemplate} template.`,
             variant: "default",
         });
-    };
+    }, [showToast]);
 
-    const handlePrint = useReactToPrint({
-        contentRef: printRef,
-        documentTitle: resumeTitle || `${firstName}'s Resume`,
-        onBeforeGetContent: () => {
-            toast({
-                title: "📄 Preparing PDF",
-                description: "Your resume is being prepared for download...",
-                variant: "default",
-            });
-        },
-        onAfterPrint: () => {
-            toast({
-                title: "✅ PDF Generated",
-                description: "Your resume has been exported successfully.",
-                variant: "default",
-            });
-        },
-        onPrintError: (error) => {
-            console.error('❌ Print failed:', error);
-            toast({
-                title: "❌ PDF Generation Failed",
-                description: "Failed to generate PDF. Please try again.",
-                variant: "destructive",
-            });
-        },
-    });
-
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         router.push('/');
-        toast({
+        showToast({
             title: "👋 See You Soon!",
             description: "Returning to dashboard...",
             variant: "default",
         });
-    };
+    }, [router, showToast]);
 
-    const handleTitleChange = (e) => {
+    const handleTitleChange = useCallback((e) => {
         setResumeTitle(e.target.value);
         setHasInitializedTitle(true);
         setIsAutoTitleEnabled(false);
-    };
+    }, []);
 
-    const applyTitleSuggestion = (suggestion) => {
+    const applyTitleSuggestion = useCallback((suggestion) => {
         setResumeTitle(suggestion);
         setHasInitializedTitle(true);
         setIsAutoTitleEnabled(false);
 
-        toast({
+        showToast({
             title: "✨ Title Updated",
             description: `Resume title changed to "${suggestion}"`,
             variant: "default",
         });
-    };
+    }, [showToast]);
 
-    const resetToAutoTitle = () => {
+    const resetToAutoTitle = useCallback(() => {
         setIsAutoTitleEnabled(true);
         setHasInitializedTitle(false);
         const newTitle = `${firstName}'s Resume`;
         setResumeTitle(newTitle);
 
-        toast({
+        showToast({
             title: "🔄 Auto-Title Enabled",
             description: "Title will automatically update with your name.",
             variant: "default",
         });
+    }, [firstName, showToast]);
+
+    // Get template icon/emoji
+    const getTemplateIcon = (templateId) => {
+        const icons = {
+            modern: '✨',
+            minimal: '🎯',
+            creative: '🎨'
+        };
+        return icons[templateId] || '📄';
     };
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (pendingToast.current) {
+                clearTimeout(pendingToast.current);
+            }
+        };
+    }, []);
+
+    // Show loading state while templates are loading
+    if (templatesLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col items-center gap-6"
+                >
+                    <div className="relative">
+                        <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                        <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
+                    </div>
+                    <div className="text-center">
+                        <div className="text-white text-2xl font-bold mb-2">Loading Templates</div>
+                        <div className="text-gray-400 text-sm">Preparing your templates...</div>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
 
     return (
         <>
-            {/* Animated Background Gradient */}
+            {/* Animated Background linear */}
             <div className="fixed inset-0 bg-linear-to-br from-gray-900 via-purple-900/10 to-gray-900 -z-10" />
 
             {/* Top Navigation Bar - Glassmorphism Design */}
@@ -415,7 +490,7 @@ function EditorContent() {
                                 </div>
                             </div>
 
-                            {/* Template Selector */}
+                            {/* Template Selector - Dynamically populated from backend */}
                             <div className="hidden lg:flex items-center gap-3 ml-4">
                                 <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10">
                                     <Palette className="w-4 h-4 text-purple-400" />
@@ -424,9 +499,15 @@ function EditorContent() {
                                         onChange={handleTemplateChange}
                                         className="bg-transparent text-white border-none focus:outline-none focus:ring-0 text-sm cursor-pointer"
                                     >
-                                        <option value="modern" className="bg-gray-900">✨ Modern</option>
-                                        <option value="minimal" className="bg-gray-900">🎯 Minimal</option>
-                                        <option value="creative" className="bg-gray-900">🎨 Creative</option>
+                                        {templates.map((template) => (
+                                            <option
+                                                key={template.id}
+                                                value={template.id}
+                                                className="bg-gray-900"
+                                            >
+                                                {getTemplateIcon(template.id)} {template.name}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
@@ -442,9 +523,10 @@ function EditorContent() {
                                     className="relative overflow-hidden group bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 text-white shadow-lg shadow-purple-600/25"
                                     disabled={isSaving}
                                 >
-                                    <AnimatePresence>
+                                    <AnimatePresence mode="wait">
                                         {saveSuccess ? (
                                             <motion.div
+                                                key="success"
                                                 initial={{ opacity: 0, scale: 0.5 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.5 }}
@@ -455,6 +537,7 @@ function EditorContent() {
                                             </motion.div>
                                         ) : (
                                             <motion.div
+                                                key="save"
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
@@ -464,7 +547,6 @@ function EditorContent() {
                                                 {isSaving ? (
                                                     <>
                                                         <span className="animate-pulse">Saving...</span>
-                                                        <Zap className="w-4 h-4 ml-2 animate-pulse" />
                                                     </>
                                                 ) : (
                                                     'Save Resume'
@@ -476,15 +558,33 @@ function EditorContent() {
                             </motion.div>
 
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    onClick={handlePrint}
+                                <DownloadPDF
+                                    ref={downloadRef}
+                                    resumeData={resumeData}
+                                    template={selectedTemplate}
+                                    filename={`${firstName}-resume-${selectedTemplate}.pdf`}
                                     variant="default"
                                     size="sm"
-                                    className="flex items-centerrelative overflow-hidden group bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
-                                >
-                                    <Printer className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
-                                    Export PDF
-                                </Button>
+                                    label="Export PDF"
+                                    showIcon={true}
+                                    showLabel={true}
+                                    elementId="resume-preview-content"
+                                    onBeforeDownload={() => {
+                                        showToast({
+                                            title: "📄 Generating PDF",
+                                            description: `Creating your ${selectedTemplate} resume...`,
+                                            variant: "default",
+                                        });
+                                    }}
+                                    onAfterDownload={() => {
+                                        showToast({
+                                            title: "✅ PDF Generated",
+                                            description: "Your professional resume is ready!",
+                                            variant: "default",
+                                        });
+                                    }}
+                                    className="bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
+                                />
                             </motion.div>
                         </div>
                     </div>
@@ -516,7 +616,7 @@ function EditorContent() {
                     transition={{ duration: 0.5, delay: 0.1 }}
                     className="w-2/3 bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50 backdrop-blur-sm"
                 >
-                    <div className="h-full overflow-y-auto custom-scrollbar p-6" ref={printRef}>
+                    <div className="h-full overflow-y-auto custom-scrollbar">
                         <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
                             <LivePreview
                                 resumeData={resumeData}
