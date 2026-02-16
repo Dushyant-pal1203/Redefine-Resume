@@ -4,14 +4,14 @@
   --background: #ffffff;
   --foreground: #171717;
   --gradient: linear-gradient(60deg,
-      rgb(242, 167, 93),
-      rgb(214, 112, 92),
-      rgb(239, 78, 123),
-      rgb(161, 102, 171),
-      rgb(80, 115, 184),
-      rgb(16, 152, 173),
-      rgb(7, 179, 155),
-      rgb(111, 186, 130));
+      #f2a75d,
+      #d6705c,
+      #ef4e7b,
+      #a166ab,
+      #5073b8,
+      #1098ad,
+      #07b39b,
+      #6fba82);
 }
 
 @theme inline {
@@ -27,6 +27,7 @@
     --foreground: #ededed;
   }
 }
+
 
 body {
   background: var(--gradient);

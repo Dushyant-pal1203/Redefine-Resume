@@ -1,6 +1,7 @@
+// components/FunctionComponent/ResumeOperations.jsx
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
     Copy,
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useDuplicateResume, useDeleteResume } from "@/hooks/use-resumes";
 import { useToast } from "@/hooks/use-toast";
+import DownloadPDF from './DownloadPDF';
 
 export function ResumeQuickActions({ resume, onActionComplete, showLabels = false }) {
     const router = useRouter();
@@ -24,10 +26,13 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
     const [showShareModal, setShowShareModal] = useState(false);
     const resumeId = resume.resume_id || resume.id;
     const { toast } = useToast();
+    const downloadRef = useRef(null);
 
     const handleView = () => {
-        const resumeData = encodeURIComponent(JSON.stringify(resume));
-        router.push(`/editor?resumeId=${resumeId}&data=${resumeData}&template=${resume.template || 'modern'}&view=true`);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(`resume_${resumeId}`, JSON.stringify(resume));
+        }
+        router.push(`/preview/${resumeId}`);
     };
 
     const handleEdit = () => {
@@ -39,8 +44,18 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
         try {
             await duplicateResume(resumeId);
             onActionComplete?.();
+            toast({
+                title: "✅ Duplicate Created",
+                description: "Resume has been duplicated successfully.",
+                variant: "default",
+            });
         } catch (error) {
             console.error('Duplicate failed:', error);
+            toast({
+                title: "❌ Duplicate Failed",
+                description: "Failed to duplicate resume. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
@@ -49,12 +64,22 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
             await deleteResume(resumeId);
             setShowDeleteModal(false);
             onActionComplete?.();
+            toast({
+                title: "🗑️ Resume Deleted",
+                description: "The resume has been permanently removed.",
+                variant: "default",
+            });
         } catch (error) {
             console.error('Delete failed:', error);
+            toast({
+                title: "❌ Delete Failed",
+                description: "Failed to delete resume. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
-    const handleDownload = () => {
+    const handleDownloadJSON = () => {
         const dataStr = JSON.stringify(resume, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
         const exportFileDefaultName = `${resume.full_name || 'resume'}-${resumeId}.json`;
@@ -63,6 +88,12 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileDefaultName);
         linkElement.click();
+
+        toast({
+            title: "📥 JSON Downloaded",
+            description: "Resume data has been exported as JSON.",
+            variant: "default",
+        });
     };
 
     const actions = [
@@ -93,8 +124,8 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
         },
         {
             icon: Download,
-            label: 'Download',
-            onClick: handleDownload,
+            label: 'Download JSON',
+            onClick: handleDownloadJSON,
             color: 'text-cyan-400',
             hoverColor: 'hover:bg-cyan-500/10',
             show: true
@@ -213,11 +244,32 @@ export function ResumeQuickActions({ resume, onActionComplete, showLabels = fals
                     </div>
 
                     <div className="flex items-center justify-center gap-4 pt-4">
-                        <Button variant="outline" className="flex items-center justify-center">
-                            <Download className="w-4 h-4 mr-2" />
-                            Download PDF
-                        </Button>
-                        <Button variant="outline" className="flex items-center justify-center">
+                        <DownloadPDF
+                            ref={downloadRef}
+                            resumeData={resume}
+                            template={resume.template || 'modern'}
+                            filename={`${resume.full_name || 'resume'}-${resume.template || 'modern'}.pdf`}
+                            variant="outline"
+                            size="default"
+                            label="Download PDF"
+                            showIcon={true}
+                            showLabel={true}
+                            elementId="resume-preview-content"
+                            className="flex items-center justify-center"
+                            onBeforeDownload={() => {
+                                // Store the resume data for preview
+                                if (typeof window !== 'undefined') {
+                                    localStorage.setItem(`resume_${resumeId}`, JSON.stringify(resume));
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="outline"
+                            className="flex items-center justify-center"
+                            onClick={() => {
+                                window.location.href = `mailto:?subject=Check out my resume&body=View my resume here: ${window.location.origin}/preview/${resumeId}`;
+                            }}
+                        >
                             <Share2 className="w-4 h-4 mr-2" />
                             Email
                         </Button>

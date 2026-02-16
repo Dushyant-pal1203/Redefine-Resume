@@ -140,7 +140,9 @@ function Toast({
 
     const [progress, setProgress] = React.useState(100);
     const [paused, setPaused] = React.useState(false);
+    const [shouldClose, setShouldClose] = React.useState(false);
 
+    // Progress animation
     React.useEffect(() => {
         if (paused) return;
 
@@ -151,7 +153,7 @@ function Toast({
             setProgress((prev) => {
                 if (prev <= 0) {
                     clearInterval(timer);
-                    onClose?.();
+                    setShouldClose(true); // ✅ mark for closing
                     return 0;
                 }
                 return prev - step;
@@ -159,7 +161,14 @@ function Toast({
         }, interval);
 
         return () => clearInterval(timer);
-    }, [paused, duration, onClose]);
+    }, [paused, duration]);
+
+    // Close AFTER render cycle
+    React.useEffect(() => {
+        if (shouldClose) {
+            onClose?.();
+        }
+    }, [shouldClose, onClose]);
 
     return (
         <motion.div
@@ -191,13 +200,12 @@ function Toast({
             </div>
 
             <button
-                onClick={onClose}
+                onClick={() => setShouldClose(true)}
                 className="relative z-10 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition"
             >
                 <X className="w-4 h-4" />
             </button>
 
-            {/* Progress */}
             <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
                 <div
                     className={`h-full bg-linear-to-r ${styles.progress}`}
@@ -210,6 +218,7 @@ function Toast({
         </motion.div>
     );
 }
+
 
 /* ---------------- TOASTER ---------------- */
 
