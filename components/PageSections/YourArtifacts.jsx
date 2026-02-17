@@ -151,33 +151,6 @@ export default function YourArtifacts() {
                     </div>
                 </div>
 
-                {/* Selection Indicator */}
-                {selectedIds.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-6 flex items-center justify-between bg-linear-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 border border-purple-500/30 rounded-xl p-4 backdrop-blur-xl"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-purple-500/30">
-                                <CheckCircle2 className="w-5 h-5 text-purple-400" />
-                            </div>
-                            <span className="text-white font-medium">
-                                <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-pink-400 font-bold">
-                                    {selectedIds.length}
-                                </span> artifact(s) selected
-                            </span>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={clearSelection}
-                            className="text-gray-400 hover:text-white hover:bg-white/10"
-                        >
-                            Clear Selection
-                        </Button>
-                    </motion.div>
-                )}
 
                 {/* Resumes Grid */}
                 {resumes?.length > 0 ? (

@@ -52,7 +52,7 @@ export default function Navbar() {
                     {/* Desktop Navigation */}
                     <div className="hidden md:flex space-x-6 lg:space-x-8 items-center">
                         <a
-                            href="#templates"
+                            href="/templates"
                             className="text-gray-300 hover:text-cyan-300 transition-colors duration-200 font-medium"
                         >
                             Templates
