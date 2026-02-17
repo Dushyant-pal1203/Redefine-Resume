@@ -168,7 +168,7 @@ export default function ResumeEditor({ resumeData, onUpdate, onPDFUpload }) {
                     <div className="text-gray-400 text-sm space-y-2">
                         <p>• Upload your resume PDF to automatically fill all fields below</p>
                         <p>• Supported: Single-page PDF resumes with clear text</p>
-                        <p className="text-yellow-400">• Make sure backend server is running</p>
+                        {/* <p className="text-yellow-400">• Make sure backend server is running</p> */}
                     </div>
                 </div>
             </div>

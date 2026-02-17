@@ -5,7 +5,7 @@ import { useToast } from "./use-toast";
 
 const API_BASE = "http://localhost:5001/api/resume";
 const API_BASE_PDF = "http://localhost:5001/api/upload/pdf";
-const API_BASE_PDF_GENERATE = "http://localhost:5001/api/pdf/generate"; // Fixed: removed extra quotes
+const API_BASE_PDF_GENERATE = "http://localhost:5001/api/pdf/generate";
 
 /* =====================================================
    GET ALL RESUMES
