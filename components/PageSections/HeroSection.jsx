@@ -2,8 +2,10 @@
 
 import PdfUpload from "@/components/FunctionComponent/PdfUpload";
 import { motion } from "framer-motion";
+import { useUser } from "@/hooks/use-user";
 
 export default function HeroSection() {
+    const { user } = useUser();
     return (
         <section className="relative pt-20 pb-32 px-6 m-0 bg-[#00000060]">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center text-center sm:text-left gap-12">
@@ -34,7 +36,10 @@ export default function HeroSection() {
                             </p>
 
                             {/* Button Section */}
-                            <PdfUpload />
+                            <PdfUpload
+                                className="justify-items-start"
+                                userId={user?.id}
+                                showDragDrop={false} />
                         </div>
                     </div>
                 </div>

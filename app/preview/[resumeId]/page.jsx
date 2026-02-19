@@ -479,17 +479,16 @@ export default function PreviewPage() {
                             >
                                 <DownloadPDF
                                     ref={downloadRef}
-                                    resumeData={resumeData}
-                                    template={resumeData.template || 'modern'}
-                                    filename={`${resumeData.full_name || 'resume'}.pdf`}
+                                    resumeId={resumeId}
+                                    filename={`${resumeData.full_name || 'resume'}-${resumeData.template || 'modern'}.pdf`}
                                     variant="default"
                                     size="default"
                                     label="Download PDF"
                                     showIcon={true}
                                     showLabel={true}
-                                    elementId="resume-preview-content"
                                     className="p-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
+
                             </motion.div>
                         </div>
                     </div>

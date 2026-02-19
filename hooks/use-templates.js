@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "./use-toast";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
@@ -14,13 +16,32 @@ export function useTemplates() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/templates`);
+      const url = `${API_BASE_URL}/api/templates`;
+      console.log("Fetching templates from:", url);
+
+      // Try both ports to debug
+      console.log("Trying port 5001 (from .env)...");
+
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response status:", response.status);
+      console.log("Response OK?", response.ok);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error details
+        const errorText = await response.text();
+        console.error("Error response body:", errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`,
+        );
       }
 
       const result = await response.json();
+      console.log("Templates response:", result);
 
       if (result.success) {
         setTemplates(result.data);
@@ -28,11 +49,15 @@ export function useTemplates() {
         throw new Error(result.error || "Failed to fetch templates");
       }
     } catch (err) {
-      console.error("Error fetching templates:", err);
+      console.error("Error fetching templates:", {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+      });
       setError(err.message);
       toast({
-        title: "❌ Error",
-        description: "Failed to load templates. Please try again.",
+        title: "❌ Connection Error",
+        description: `Failed to connect to server at ${API_BASE_URL}. Make sure backend is running.`,
         variant: "destructive",
       });
     } finally {
@@ -46,9 +71,16 @@ export function useTemplates() {
 
   const getTemplateById = useCallback(
     async (templateId) => {
+      if (!templateId) return null;
+
       try {
         const response = await fetch(
           `${API_BASE_URL}/api/templates/${templateId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
 
         if (!response.ok) {
@@ -76,9 +108,16 @@ export function useTemplates() {
   );
 
   const getTemplateMetadata = useCallback(async (templateId) => {
+    if (!templateId) return null;
+
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/templates/${templateId}/metadata`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
 
       if (!response.ok) {
@@ -126,8 +165,15 @@ export function useTemplate(templateId) {
         setIsLoading(true);
         setError(null);
 
+        console.log("Fetching template:", templateId);
+
         const response = await fetch(
           `${API_BASE_URL}/api/templates/${templateId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
         );
 
         if (!response.ok) {
@@ -135,6 +181,7 @@ export function useTemplate(templateId) {
         }
 
         const result = await response.json();
+        console.log("Template response:", result);
 
         if (result.success) {
           setTemplate(result.data);
