@@ -1,7 +1,7 @@
 import HeroSection from "@/components/PageSections/HeroSection";
 import TemplateSection from "@/components/PageSections/TemplateSection";
 import YourArtifacts from "@/components/PageSections/YourArtifacts";
-// import DashboardStats from "@/components/PageSections/DashboardStats";
+// import Dashboard from "@/components/PageSections/Dashboard";
 
 export default function Home() {
   return (
@@ -9,7 +9,7 @@ export default function Home() {
       <HeroSection />
       <TemplateSection />
       <YourArtifacts />
-      {/* <DashboardStats /> */}
+      {/* <Dashboard /> */}
     </main>
   );
 }

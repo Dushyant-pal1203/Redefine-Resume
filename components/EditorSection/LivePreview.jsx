@@ -21,6 +21,11 @@ Handlebars.registerHelper('isTool', function (skill) {
     return toolSkills.includes(skill);
 });
 
+// Helper to extract nested properties
+Handlebars.registerHelper('extract', function (obj, path) {
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+});
+
 // Template renderer component with Handlebars
 function TemplateRenderer({ template, resumeData }) {
     if (!template || !template.html) {
@@ -34,22 +39,50 @@ function TemplateRenderer({ template, resumeData }) {
     try {
         // Prepare data with defaults to avoid undefined errors
         const preparedData = {
-            full_name: resumeData?.full_name || '',
-            email: resumeData?.email || '',
-            phone: resumeData?.phone || '',
-            location: resumeData?.location || '',
-            professional_summary: resumeData?.professional_summary || '',
+            personal: resumeData?.personal || {
+                full_name: '',
+                headline: '',
+                email: '',
+                phone: '',
+                location: '',
+                website: '',
+                linkedin: '',
+                github: '',
+                twitter: ''
+            },
+            summary: resumeData?.summary || { summary: '' },
             experience: Array.isArray(resumeData?.experience) ? resumeData.experience : [],
             education: Array.isArray(resumeData?.education) ? resumeData.education : [],
-            skills: Array.isArray(resumeData?.skills) ? resumeData.skills : [],
-            projects: Array.isArray(resumeData?.projects) ? resumeData.projects : []
+            skills: resumeData?.skills || { technical: [], soft: [], languages: [] },
+            projects: Array.isArray(resumeData?.projects) ? resumeData.projects : [],
+            certifications: Array.isArray(resumeData?.certifications) ? resumeData.certifications : [],
+            languages: Array.isArray(resumeData?.languages) ? resumeData.languages : [],
+            publications: Array.isArray(resumeData?.publications) ? resumeData.publications : [],
+            awards: Array.isArray(resumeData?.awards) ? resumeData.awards : [],
+            volunteering: Array.isArray(resumeData?.volunteering) ? resumeData.volunteering : [],
+            interests: Array.isArray(resumeData?.interests) ? resumeData.interests : []
         };
 
-        console.log('Rendering template with data:', preparedData);
+        // Add flattened properties for backward compatibility with old templates
+        const flattenedData = {
+            full_name: preparedData.personal.full_name,
+            email: preparedData.personal.email,
+            phone: preparedData.personal.phone,
+            location: preparedData.personal.location,
+            professional_summary: preparedData.summary.summary,
+            headline: preparedData.personal.headline,
+            website: preparedData.personal.website,
+            linkedin: preparedData.personal.linkedin,
+            github: preparedData.personal.github,
+            twitter: preparedData.personal.twitter,
+            ...preparedData
+        };
+
+        console.log('Rendering template with data:', flattenedData);
 
         // Compile and render the template with Handlebars
         const compiledTemplate = Handlebars.compile(template.html);
-        const renderedHtml = compiledTemplate(preparedData);
+        const renderedHtml = compiledTemplate(flattenedData);
 
         return (
             <div
@@ -72,11 +105,18 @@ function TemplateRenderer({ template, resumeData }) {
 
 export default function LivePreview({ resumeData, template: templateId }) {
     const [isClient, setIsClient] = useState(false);
+    const [previewKey, setPreviewKey] = useState(0);
     const { template, isLoading, error } = useTemplate(templateId);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // Force re-render when resumeData changes to update the preview
+    useEffect(() => {
+        setPreviewKey(prev => prev + 1);
+        console.log('LivePreview data updated:', resumeData);
+    }, [resumeData]);
 
     // Add debug logging
     useEffect(() => {
@@ -103,7 +143,7 @@ export default function LivePreview({ resumeData, template: templateId }) {
     return (
         <>
             {/* Regular preview with all styling */}
-            <div id="resume-preview-content" className="h-screen overflow-y-auto p-6 bg-white rounded-lg shadow-xl">
+            <div id="resume-preview-content" key={previewKey} className="h-screen overflow-y-auto p-1 bg-white rounded-lg shadow-xl">
                 <div className="max-w-4xl mx-auto">
                     <TemplateRenderer template={template} resumeData={resumeData} />
 
