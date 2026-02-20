@@ -114,9 +114,13 @@ export function AuthProvider({ children }) {
           setIsAuthenticated(true);
 
           if (toast?.toast) {
+            // Get the user's name from the response data
+            const userName =
+              result.data.name || result.data.email.split("@")[0] || "User";
+
             toast.toast({
               title: "✅ Welcome Back!",
-              description: `Logged in as ${result.data.email}`,
+              description: ` ${userName}`,
             });
           }
 
@@ -169,9 +173,16 @@ export function AuthProvider({ children }) {
           setIsAuthenticated(true);
 
           if (toast?.toast) {
+            // Get the user's name from the registration data
+            const userName =
+              result.data.name ||
+              name ||
+              result.data.email.split("@")[0] ||
+              "User";
+
             toast.toast({
               title: "✅ Account Created!",
-              description: "Welcome to Resume Redefined!",
+              description: `Welcome, ${userName}!`,
             });
           }
 
@@ -211,6 +222,9 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      // Get user name before clearing state for the toast
+      const userName = user?.name || user?.email?.split("@")[0] || "User";
+
       // Remove token and clear state
       Cookies.remove("token", { path: "/" });
       setUser(null);
@@ -218,14 +232,14 @@ export function AuthProvider({ children }) {
 
       if (toast?.toast) {
         toast.toast({
-          title: "👋 Logged Out",
-          description: "See you again soon!",
+          title: "👋 Logged Out Successfully",
+          description: `Goodbye, ${userName}! See you again soon!`,
         });
       }
 
       router.push("/");
     }
-  }, [toast, router]);
+  }, [toast, router, user]);
 
   const updateUser = useCallback((updatedData) => {
     setUser((prev) => ({ ...prev, ...updatedData }));

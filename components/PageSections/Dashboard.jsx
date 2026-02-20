@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Card,
     CardHeader,
@@ -25,67 +25,67 @@ import {
     Clock,
     Eye,
     Download,
-    TrendingUp
+    TrendingUp,
+    Loader2
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { useResumes } from '@/hooks/use-resumes';
+import { usePDF } from '@/hooks/use-pdf';
 
 export default function ResumeListPage() {
     const router = useRouter();
+    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const {
+        resumes,
+        isLoading: resumesLoading,
+        fetchResumes,
+        deleteResume,
+        togglePublic,
+        duplicateResume
+    } = useResumes();
+    const { downloadPDF, isGenerating } = usePDF();
+
     const [viewMode, setViewMode] = useState('grid');
     const [selectedFilter, setSelectedFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedResumeId, setSelectedResumeId] = useState(null);
 
-    const resumes = [
-        {
-            id: 1,
-            name: 'John Doe',
-            template: 'Modern Pro',
-            lastUpdated: '2 hours ago',
-            views: 234,
-            status: 'active',
-            summary: 'Experienced software engineer with 5+ years in full-stack development',
-            experience: [],
-            education: [],
-            skills: []
-        },
-        {
-            id: 2,
-            name: 'Jane Smith',
-            template: 'Creative Flow',
-            lastUpdated: '1 day ago',
-            views: 156,
-            status: 'draft',
-            summary: 'Creative designer specializing in UI/UX and brand identity',
-            experience: [],
-            education: [],
-            skills: []
-        },
-        {
-            id: 3,
-            name: 'Mike Johnson',
-            template: 'Executive',
-            lastUpdated: '3 hours ago',
-            views: 89,
-            status: 'active',
-            summary: 'Senior product manager with expertise in SaaS and B2B products',
-            experience: [],
-            education: [],
-            skills: []
-        },
-    ];
+    // Redirect if not authenticated
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.push('/login');
+        }
+    }, [isAuthenticated, authLoading, router]);
 
-    const filters = [
-        { id: 'all', label: 'All Resumes', count: 12 },
-        { id: 'active', label: 'Active', count: 8 },
-        { id: 'draft', label: 'Drafts', count: 3 },
-        { id: 'archived', label: 'Archived', count: 1 },
-    ];
+    // Transform resumes data to match dashboard format
+    const transformedResumes = resumes.map(resume => ({
+        id: resume.resume_id,
+        name: resume.resume_title || 'Untitled Resume',
+        template: resume.template || 'Modern',
+        lastUpdated: new Date(resume.updated_at || resume.created_at).toLocaleDateString(),
+        views: resume.view_count || 0,
+        status: resume.status || (resume.is_public ? 'active' : 'draft'),
+        summary: resume.summary || resume.professional_summary || 'No summary available',
+        experience: resume.work_experience || [],
+        education: resume.education || [],
+        skills: resume.skills || []
+    }));
 
+    // Calculate stats from real data
     const stats = [
-        { title: 'Total Resumes', value: '24', icon: FileText, color: 'purple' },
-        { title: 'Total Views', value: '1,234', icon: Eye, color: 'blue' },
-        { title: 'Downloads', value: '567', icon: Download, color: 'green' },
-        { title: 'Success Rate', value: '89%', icon: TrendingUp, color: 'yellow' },
+        { title: 'Total Resumes', value: resumes.length.toString(), icon: FileText, color: 'purple' },
+        { title: 'Total Views', value: resumes.reduce((acc, r) => acc + (r.view_count || 0), 0).toLocaleString(), icon: Eye, color: 'blue' },
+        { title: 'Downloads', value: resumes.reduce((acc, r) => acc + (r.download_count || 0), 0).toLocaleString(), icon: Download, color: 'green' },
+        { title: 'Public Resumes', value: resumes.filter(r => r.is_public).length.toString(), icon: TrendingUp, color: 'yellow' },
+    ];
+
+    // Calculate filter counts
+    const filters = [
+        { id: 'all', label: 'All Resumes', count: resumes.length },
+        { id: 'active', label: 'Active', count: resumes.filter(r => r.is_public).length },
+        { id: 'draft', label: 'Drafts', count: resumes.filter(r => !r.is_public).length },
+        { id: 'archived', label: 'Archived', count: 0 }, // Add archive functionality if needed
     ];
 
     const handleCreateNewResume = () => {
@@ -94,32 +94,44 @@ export default function ResumeListPage() {
 
     const handleEditResume = (resume) => {
         try {
-            // Prepare resume data for URL
-            const resumeData = {
-                id: resume.id,
-                name: resume.name,
-                template: resume.template,
-                summary: resume.summary,
-                experience: resume.experience || [],
-                education: resume.education || [],
-                skills: resume.skills || []
-            };
-
-            // Encode the data for URL
-            const encodedData = encodeURIComponent(JSON.stringify(resumeData));
-
-            // Navigate to editor with resume data
-            router.push(`/editor?resumeId=${resume.id}&data=${encodedData}&template=${resume.template?.toLowerCase().replace(/\s+/g, '-') || 'modern'}`);
+            // Navigate to editor with resume ID
+            router.push(`/editor?resumeId=${resume.id}&template=${resume.template?.toLowerCase().replace(/\s+/g, '-') || 'modern'}`);
         } catch (error) {
-            console.error('Error preparing resume data:', error);
-            // Fallback to simple navigation
+            console.error('Error navigating to editor:', error);
             router.push(`/editor?resumeId=${resume.id}`);
         }
     };
 
+    const handleDownloadPDF = async (e, resumeId, resumeName) => {
+        e.stopPropagation();
+        setSelectedResumeId(resumeId);
+        const filename = `${resumeName.replace(/\s+/g, '_')}_resume.pdf`;
+        await downloadPDF(resumeId, filename);
+        setSelectedResumeId(null);
+    };
+
+    const handleDeleteResume = async (e, resumeId) => {
+        e.stopPropagation();
+        if (window.confirm('Are you sure you want to delete this resume?')) {
+            await deleteResume(resumeId);
+        }
+    };
+
+    const handleTogglePublic = async (e, resumeId) => {
+        e.stopPropagation();
+        await togglePublic(resumeId);
+    };
+
+    const handleDuplicateResume = async (e, resumeId) => {
+        e.stopPropagation();
+        await duplicateResume(resumeId);
+    };
+
     // Filter resumes based on selected filter and search query
-    const filteredResumes = resumes.filter(resume => {
-        const matchesFilter = selectedFilter === 'all' || resume.status === selectedFilter;
+    const filteredResumes = transformedResumes.filter(resume => {
+        const matchesFilter = selectedFilter === 'all' ||
+            (selectedFilter === 'active' && resume.status === 'active') ||
+            (selectedFilter === 'draft' && resume.status === 'draft');
         const matchesSearch = resume.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             resume.summary.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesFilter && matchesSearch;
@@ -140,13 +152,24 @@ export default function ResumeListPage() {
         yellow: 'text-yellow-400',
     };
 
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6 p-6 bg-gray-950/20 min-h-screen">
             {/* Header Section */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">My Resumes</h1>
-                    <p className="text-gray-400 mt-1">Manage and organize your resume collection</p>
+                    <h1 className="text-3xl font-bold text-white">
+                        Welcome back, {user?.name || 'User'}!
+                        <div className="bg-linear-to-r from-purple-400 to-cyan-400 mt-2 w-28 h-1"></div>
+                    </h1>
+                    <p className="text-gray-300 mt-1">Manage and organize your resume collection</p>
                 </div>
                 <Button
                     onClick={handleCreateNewResume}
@@ -244,7 +267,11 @@ export default function ResumeListPage() {
             </Card>
 
             {/* Resume Cards */}
-            {filteredResumes.length > 0 ? (
+            {resumesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                </div>
+            ) : filteredResumes.length > 0 ? (
                 viewMode === 'grid' ? (
                     <CardGrid columns={{ default: 1, md: 2, lg: 3 }} gap="md">
                         {filteredResumes.map((resume) => (
@@ -287,17 +314,38 @@ export default function ResumeListPage() {
                                     </div>
                                 </CardContent>
 
-                                <CardFooter>
+                                <CardFooter className="flex gap-2">
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="w-full hover:bg-purple-600/20"
+                                        className="flex-1 hover:bg-purple-600/20"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleEditResume(resume);
                                         }}
                                     >
-                                        Edit Resume
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="hover:bg-green-600/20"
+                                        onClick={(e) => handleDownloadPDF(e, resume.id, resume.name)}
+                                        disabled={isGenerating && selectedResumeId === resume.id}
+                                    >
+                                        {isGenerating && selectedResumeId === resume.id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Download className="w-4 h-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="hover:bg-blue-600/20"
+                                        onClick={(e) => handleDuplicateResume(e, resume.id)}
+                                    >
+                                        <FileText className="w-4 h-4" />
                                     </Button>
                                 </CardFooter>
                             </Card>
@@ -336,16 +384,30 @@ export default function ResumeListPage() {
                                             <CardBadge color={resume.status === 'active' ? 'green' : 'yellow'}>
                                                 {resume.status}
                                             </CardBadge>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleEditResume(resume);
-                                                }}
-                                            >
-                                                Edit
-                                            </Button>
+                                            <div className="flex gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditResume(resume);
+                                                    }}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => handleDownloadPDF(e, resume.id, resume.name)}
+                                                    disabled={isGenerating && selectedResumeId === resume.id}
+                                                >
+                                                    {isGenerating && selectedResumeId === resume.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Download className="w-4 h-4" />
+                                                    )}
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -358,7 +420,11 @@ export default function ResumeListPage() {
                     <div className="py-12">
                         <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                         <h3 className="text-xl font-semibold text-white mb-2">No resumes found</h3>
-                        <p className="text-gray-400 mb-6">Try adjusting your search or filter to find what you're looking for.</p>
+                        <p className="text-gray-400 mb-6">
+                            {searchQuery || selectedFilter !== 'all'
+                                ? "Try adjusting your search or filter to find what you're looking for."
+                                : "Get started by creating your first resume!"}
+                        </p>
                         <Button onClick={handleCreateNewResume}>
                             <Plus className="w-4 h-4 mr-2" />
                             Create New Resume
