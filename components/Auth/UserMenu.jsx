@@ -70,7 +70,7 @@ export default function UserMenu() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="absolute right-0 mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50"
+                        className="relative sm:absolute right-0 mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50"
                     >
                         {/* User Info */}
                         <div className="p-4 bg-linear-to-r from-purple-600/20 to-cyan-500/20 border-b border-gray-700">

@@ -1,3 +1,4 @@
+// app/preview/[resumeId]/page.jsx
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -9,6 +10,7 @@ import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useTemplates } from '@/hooks/use-templates';
 import Handlebars from 'handlebars';
+import { convertToFlexibleFormat, convertToOldFormat } from '@/lib/resume-schema';
 
 // Print styles to properly format the resume for printing
 const printStyles = `
@@ -37,12 +39,12 @@ const printStyles = `
     /* Hide all UI elements */
     header, footer, button, .sticky, .fixed, nav,
     [role="button"], [class*="header"], [class*="footer"] {
-      display: block !important;
+      display: none !important;
     }
     
     /* Page margins */
     @page {
-      margin: 0.1in;
+      margin: 0.5in;
     }
     
     /* Ensure proper box sizing */
@@ -73,28 +75,46 @@ if (typeof window !== 'undefined') {
         return options.inverse(this);
     });
 
-    // Helper for skill categorization (for professional template)
-    Handlebars.registerHelper('isFrontend', function (skill) {
-        const frontendSkills = ['HTML5', 'CSS3', 'JavaScript', 'React.js', 'Next.js', 'Tailwind CSS', 'Bootstrap'];
-        return frontendSkills.includes(skill);
-    });
-
-    Handlebars.registerHelper('isBackend', function (skill) {
-        const backendSkills = ['Node.js', 'Express.js', 'MongoDB', 'PostgreSQL', 'REST APIs'];
-        return backendSkills.includes(skill);
-    });
-
-    Handlebars.registerHelper('isTool', function (skill) {
-        const toolSkills = ['Git & GitHub', 'Vercel', 'Figma', 'Responsive Design'];
-        return toolSkills.includes(skill);
-    });
-
     // Helper for checking if it's the last item in array
     Handlebars.registerHelper('ifLast', function (index, array, options) {
         if (index === array.length - 1) {
             return options.fn(this);
         }
         return options.inverse(this);
+    });
+
+    // Helper for formatting dates
+    Handlebars.registerHelper('formatDate', function (date) {
+        if (!date) return 'Present';
+        try {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short'
+            });
+        } catch {
+            return date;
+        }
+    });
+
+    // Helper for checking if a value exists
+    Handlebars.registerHelper('ifExists', function (value, options) {
+        if (value && value.toString().trim() !== '') {
+            return options.fn(this);
+        }
+        return options.inverse(this);
+    });
+
+    // Helper for joining array items
+    Handlebars.registerHelper('join', function (array, separator) {
+        if (Array.isArray(array)) {
+            return array.join(separator || ', ');
+        }
+        return array || '';
+    });
+
+    // Helper for eq comparison
+    Handlebars.registerHelper('eq', function (a, b) {
+        return a === b;
     });
 }
 
@@ -103,6 +123,7 @@ export default function PreviewPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [resumeData, setResumeData] = useState(null);
+    const [flexibleData, setFlexibleData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [renderKey, setRenderKey] = useState(0);
     const [isContentReady, setIsContentReady] = useState(false);
@@ -110,7 +131,6 @@ export default function PreviewPage() {
     const resumeId = params.resumeId;
     const downloadRef = useRef();
     const contentRef = useRef(null);
-    const printFrameRef = useRef(null);
     const { templates, isLoading: templatesLoading, getTemplateById } = useTemplates();
     const [templateDetails, setTemplateDetails] = useState(null);
     const [templateLoading, setTemplateLoading] = useState(false);
@@ -130,7 +150,7 @@ export default function PreviewPage() {
         };
     }, []);
 
-    // Load resume data from localStorage
+    // Load resume data from localStorage and convert to flexible format
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const stored = localStorage.getItem(`resume_${resumeId}`);
@@ -139,6 +159,12 @@ export default function PreviewPage() {
                 try {
                     const parsed = JSON.parse(stored);
                     setResumeData(parsed);
+
+                    // Convert to flexible format using the schema function
+                    const flexible = convertToFlexibleFormat(parsed);
+                    setFlexibleData(flexible);
+
+                    console.log('Converted to flexible format:', flexible);
                 } catch (error) {
                     console.error('Error parsing resume data:', error);
                     toast({
@@ -155,32 +181,34 @@ export default function PreviewPage() {
     // Fetch template HTML and details when resumeData is loaded
     useEffect(() => {
         const fetchTemplateContent = async () => {
-            if (resumeData?.template && !templatesLoading) {
+            const templateId = resumeData?.template || 'modern';
+
+            if (resumeData && !templatesLoading) {
                 setTemplateLoading(true);
                 try {
                     // First check if template exists in local templates array for details
-                    const localTemplate = templates.find(t => t.id === resumeData.template);
+                    const localTemplate = templates.find(t => t.id === templateId);
                     if (localTemplate) {
                         setTemplateDetails(localTemplate);
                     } else {
                         // If not found locally, try to fetch from API
                         try {
-                            const template = await getTemplateById(resumeData.template);
+                            const template = await getTemplateById(templateId);
                             setTemplateDetails(template?.metadata || null);
                         } catch (error) {
                             console.error('Error fetching template details:', error);
                             // Set basic details if API fails
                             setTemplateDetails({
-                                id: resumeData.template,
-                                name: resumeData.template.charAt(0).toUpperCase() + resumeData.template.slice(1),
-                                description: `${resumeData.template} template`,
+                                id: templateId,
+                                name: templateId.charAt(0).toUpperCase() + templateId.slice(1),
+                                description: `${templateId} template`,
                                 features: []
                             });
                         }
                     }
 
                     // Fetch the actual template HTML from backend
-                    const response = await fetch(`http://localhost:5001/api/templates/${resumeData.template}`);
+                    const response = await fetch(`http://localhost:5001/api/templates/${templateId}`);
                     if (response.ok) {
                         const result = await response.json();
                         if (result.success && result.data.html) {
@@ -209,7 +237,7 @@ export default function PreviewPage() {
 
     // Force re-render after data is loaded and mark content as ready
     useEffect(() => {
-        if (resumeData && templateHtml) {
+        if (flexibleData && templateHtml) {
             setRenderKey(prev => prev + 1);
 
             // Small delay to ensure DOM is updated
@@ -219,7 +247,7 @@ export default function PreviewPage() {
 
             return () => clearTimeout(timer);
         }
-    }, [resumeData, templateHtml]);
+    }, [flexibleData, templateHtml]);
 
     // Print function
     const handlePrint = useCallback(() => {
@@ -255,7 +283,8 @@ export default function PreviewPage() {
                 .join('');
 
             // Replace body with only resume content
-            document.title = `${resumeData?.full_name || 'Resume'} - Print`;
+            const fullName = flexibleData?.personal?.full_name || resumeData?.full_name || 'Resume';
+            document.title = `${fullName} - Print`;
             document.body.innerHTML = `
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -284,33 +313,110 @@ export default function PreviewPage() {
                 variant: "destructive",
             });
         }
-    }, [isContentReady, resumeData]);
+    }, [isContentReady, flexibleData, resumeData]);
+
+    const prepareDataForTemplate = () => {
+        if (!flexibleData) return null;
+
+        // Prepare data in the format expected by templates
+        // This flattens the structure for backward compatibility with existing templates
+        const personal = flexibleData.personal || {};
+        const summary = flexibleData.summary || {};
+        const skills = flexibleData.skills || {};
+
+        return {
+            // Personal Information
+            full_name: personal.full_name || '',
+            job_title: personal.job_title || '',
+            headline: personal.headline || '',
+            email: personal.email || '',
+            phone: personal.phone || '',
+            location: personal.location || '',
+
+            // Social Links
+            portfolio: personal.portfolio_url || '',
+            portfolio_display: personal.portfolio_display || '',
+            linkedin: personal.linkedin_url || '',
+            linkedin_display: personal.linkedin_display || '',
+            github: personal.github_url || '',
+            github_display: personal.github_display || '',
+
+            // Professional Summary
+            professional_summary: summary.summary || '',
+            summary: summary.summary || '',
+
+            // Experience
+            experience: Array.isArray(flexibleData.experience)
+                ? flexibleData.experience.map(exp => ({
+                    ...exp,
+                    position: exp.title, // For backward compatibility
+                    startDate: exp.start_date,
+                    endDate: exp.end_date
+                }))
+                : [],
+
+            // Education
+            education: Array.isArray(flexibleData.education)
+                ? flexibleData.education.map(edu => ({
+                    ...edu,
+                    school: edu.institution, // For backward compatibility
+                    startDate: edu.start_date,
+                    endDate: edu.end_date
+                }))
+                : [],
+
+            // Skills
+            skills: [
+                ...(skills.technical || []),
+                ...(skills.soft || [])
+            ],
+            technical_skills: skills.technical || [],
+            soft_skills: skills.soft || [],
+
+            // Projects
+            projects: Array.isArray(flexibleData.projects)
+                ? flexibleData.projects
+                : [],
+
+            // Other sections
+            certifications: Array.isArray(flexibleData.certifications)
+                ? flexibleData.certifications
+                : [],
+
+            languages: Array.isArray(flexibleData.languages)
+                ? flexibleData.languages
+                : skills.languages || [],
+
+            publications: Array.isArray(flexibleData.publications)
+                ? flexibleData.publications
+                : [],
+
+            awards: Array.isArray(flexibleData.awards)
+                ? flexibleData.awards
+                : [],
+
+            volunteering: Array.isArray(flexibleData.volunteering)
+                ? flexibleData.volunteering
+                : [],
+
+            interests: Array.isArray(flexibleData.interests)
+                ? flexibleData.interests
+                : []
+        };
+    };
 
     const renderTemplate = () => {
-        if (!resumeData || !templateHtml) return null;
+        if (!flexibleData || !templateHtml) return null;
 
         try {
-            // Prepare data with defaults to avoid undefined errors
-            const preparedData = {
-                full_name: resumeData?.full_name || '',
-                email: resumeData?.email || '',
-                phone: resumeData?.phone || '',
-                location: resumeData?.location || '',
-                website: resumeData?.website || 'dushyantpall203.vercel.app',
-                github: resumeData?.github || 'github.com/Dushyant-pall203',
-                linkedin: resumeData?.linkedin || 'linkedin.com/in/dushyant-pal',
-                professional_summary: resumeData?.professional_summary || '',
-                experience: Array.isArray(resumeData?.experience) ? resumeData.experience : [],
-                education: Array.isArray(resumeData?.education) ? resumeData.education : [],
-                skills: Array.isArray(resumeData?.skills) ? resumeData.skills : [],
-                projects: Array.isArray(resumeData?.projects) ? resumeData.projects : []
-            };
+            // Prepare data for template
+            const templateData = prepareDataForTemplate();
 
-            console.log('Rendering template with data:', preparedData);
+            console.log('Rendering template with data:', templateData);
 
             // Compile and render the template with Handlebars
             const compiledTemplate = Handlebars.compile(templateHtml);
-            const renderedHtml = compiledTemplate(preparedData);
+            const renderedHtml = compiledTemplate(templateData);
 
             return (
                 <div
@@ -322,7 +428,7 @@ export default function PreviewPage() {
         } catch (error) {
             console.error('Template rendering error:', error);
             return (
-                <div className="text-center text-red-600 p-8">
+                <div className="text-center text-red-600 p-1">
                     <h3 className="text-xl font-bold mb-4">Error Rendering Template</h3>
                     <p className="text-sm">{error.message}</p>
                     <pre className="mt-4 text-xs text-left bg-red-50 p-4 rounded overflow-auto max-h-96">
@@ -343,8 +449,10 @@ export default function PreviewPage() {
 
     const handleEdit = () => {
         // Navigate to editor with data
+        // Use the original resumeData for editing to maintain compatibility
         const encodedData = encodeURIComponent(JSON.stringify(resumeData));
-        router.push(`/editor?resumeId=${resumeId}&data=${encodedData}&template=${resumeData.template || 'modern'}`);
+        const templateId = resumeData?.template || 'modern';
+        router.push(`/editor?resumeId=${resumeId}&data=${encodedData}&template=${templateId}`);
     };
 
     if (loading || templatesLoading) {
@@ -368,16 +476,16 @@ export default function PreviewPage() {
         );
     }
 
-    if (!resumeData) {
+    if (!resumeData || !flexibleData) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center max-w-7xl p-8"
+                    className="text-center max-w-2xl p-1"
                 >
-                    <h1 className="text-7xl text-white font-bold mb-4">Resume Not Found</h1>
-                    <p className="text-gray-400 mb-8 text-4xl">
+                    <h1 className="text-4xl text-white font-bold mb-4">Resume Not Found</h1>
+                    <p className="text-gray-400 mb-8 text-lg">
                         The resume you're looking for doesn't exist or has been deleted.
                     </p>
                     <div className='flex justify-center'>
@@ -385,9 +493,9 @@ export default function PreviewPage() {
                             onClick={() => router.push('/')}
                             variant="default"
                             size="lg"
-                            className="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-[20px] sm:text-[40px]"
+                            className="bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg"
                         >
-                            <ArrowLeft className="w-10 h-10 mr-2" />
+                            <ArrowLeft className="w-5 h-5 mr-2" />
                             Back to Dashboard
                         </Button>
                     </div>
@@ -396,7 +504,8 @@ export default function PreviewPage() {
         );
     }
 
-    const firstName = resumeData.full_name?.split(' ')[0] || 'Resume';
+    const personal = flexibleData.personal || {};
+    const firstName = personal.full_name?.split(' ')[0] || 'Resume';
     const templateId = resumeData.template || 'modern';
     const templateIcon = getTemplateIcon(templateId);
 
@@ -480,7 +589,7 @@ export default function PreviewPage() {
                                 <DownloadPDF
                                     ref={downloadRef}
                                     resumeId={resumeId}
-                                    filename={`${resumeData.full_name || 'resume'}-${resumeData.template || 'modern'}.pdf`}
+                                    filename={`${personal.full_name || 'resume'}-${templateId}.pdf`}
                                     variant="default"
                                     size="default"
                                     label="Download PDF"
@@ -488,7 +597,6 @@ export default function PreviewPage() {
                                     showLabel={true}
                                     className="p-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
-
                             </motion.div>
                         </div>
                     </div>
@@ -505,7 +613,7 @@ export default function PreviewPage() {
                 >
                     {/* Resume Title */}
                     <div className="mb-6 text-center">
-                        <h1 className="text-3xl font-bold text-white! mb-2">
+                        <h1 className="text-3xl font-bold text-white mb-2">
                             {resumeData.resume_title || `${firstName}'s Resume`}
                         </h1>
                         <div className="flex items-center justify-center gap-2">
@@ -522,7 +630,7 @@ export default function PreviewPage() {
                             )}
 
                             {/* Template Features Badges */}
-                            {templateDetails?.features && (
+                            {templateDetails?.features && templateDetails.features.length > 0 && (
                                 <div className="hidden md:flex items-center gap-2">
                                     {templateDetails.features.slice(0, 2).map((feature, index) => (
                                         <span
@@ -539,10 +647,10 @@ export default function PreviewPage() {
 
                     {/* Resume Preview */}
                     {!isContentReady || templateLoading || !templateHtml ? (
-                        <div className="bg-white rounded-xl shadow-2xl overflow-hidden flex justify-center items-center"
+                        <div
+                            className="bg-white rounded-xl shadow-2xl overflow-hidden flex justify-center items-center mx-auto"
                             style={{
                                 width: '816px',
-                                margin: '0 auto',
                                 minHeight: '1056px',
                             }}
                         >
@@ -552,10 +660,9 @@ export default function PreviewPage() {
                         <div
                             id="resume-preview-content"
                             ref={contentRef}
-                            className="bg-white rounded-xl shadow-2xl overflow-hidden"
+                            className="bg-white rounded-xl shadow-2xl overflow-hidden mx-auto"
                             style={{
                                 width: '816px',
-                                margin: '0 auto',
                                 minHeight: '1056px',
                             }}
                         >
@@ -587,7 +694,7 @@ export default function PreviewPage() {
                     </div>
 
                     {/* Template Details Section */}
-                    {templateDetails && (
+                    {templateDetails && templateDetails.features && templateDetails.features.length > 0 && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -600,12 +707,12 @@ export default function PreviewPage() {
                             </h3>
                             <p className="text-gray-400 mb-4">{templateDetails.description}</p>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {templateDetails.features?.map((feature, index) => (
+                                {templateDetails.features.map((feature, index) => (
                                     <div key={index} className="flex items-center text-gray-300 text-sm">
-                                        <svg className="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-4 h-4 text-green-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
-                                        {feature}
+                                        <span>{feature}</span>
                                     </div>
                                 ))}
                             </div>

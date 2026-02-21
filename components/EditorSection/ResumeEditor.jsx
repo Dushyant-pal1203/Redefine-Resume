@@ -59,8 +59,11 @@ import {
     convertToFlexibleFormat,
     convertDatabaseToFlexibleFormat,
     validateResumeData,
-    generateId
+    generateId,
+    getEmptyResumeData
 } from '@/lib/resume-schema';
+import { isValidUrl, cleanUrl } from '@/lib/utils';
+
 
 // Rich Text Editor Component
 const RichTextEditor = ({ value, onChange, placeholder, rows = 3 }) => {
@@ -446,15 +449,17 @@ export default function ResumeEditor({
 }) {
     const [formData, setFormData] = useState(() => {
         // Convert to flexible format if needed
-        if (initialData && !initialData.personal) {
-            return convertToFlexibleFormat(initialData);
+        if (initialData) {
+            const converted = !initialData.personal ? convertToFlexibleFormat(initialData) : initialData;
+            return converted;
         }
-        return initialData || getEmptyFormData();
+        return getEmptyResumeData();
     });
 
-    // Use a ref to track if we should notify parent
-    const shouldNotifyParent = useRef(false);
-    // Use a ref to store the latest formData for parent notification
+    // Use refs to track state without causing re-renders
+    const isInitialMount = useRef(true);
+    const isUpdatingFromParent = useRef(false);
+    const pendingParentUpdate = useRef(false);
     const formDataRef = useRef(formData);
 
     // Update ref when formData changes
@@ -462,38 +467,48 @@ export default function ResumeEditor({
         formDataRef.current = formData;
     }, [formData]);
 
-    // Separate effect for parent notification
+    // Handle parent updates separately from local changes
     useEffect(() => {
-        if (shouldNotifyParent.current && onUpdate) {
-            // Use setTimeout to ensure this runs after render is complete
-            const timeoutId = setTimeout(() => {
-                onUpdate(formDataRef.current);
-            }, 0);
-
-            shouldNotifyParent.current = false;
-
-            return () => clearTimeout(timeoutId);
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
         }
-    }, [formData, onUpdate]);
-
-    // Add this effect to sync with prop changes
-    useEffect(() => {
-        console.log('📥 ResumeEditor received new data:', initialData);
 
         if (initialData) {
-            // Convert to flexible format if needed
+            // Mark that we're updating from parent to avoid feedback loop
+            isUpdatingFromParent.current = true;
+
             const newData = !initialData.personal ? convertToFlexibleFormat(initialData) : initialData;
 
             setFormData(prevData => {
-                // Only update if the data has actually changed
+                // Only update if data has changed
                 if (JSON.stringify(prevData) !== JSON.stringify(newData)) {
-                    console.log('🔄 Updating editor form data');
                     return newData;
                 }
                 return prevData;
             });
+
+            // Reset the flag after a short delay
+            setTimeout(() => {
+                isUpdatingFromParent.current = false;
+            }, 100);
         }
     }, [initialData]);
+
+    // Notify parent of changes, but only if they came from user interaction
+    useEffect(() => {
+        if (isInitialMount.current) return;
+        if (isUpdatingFromParent.current) return;
+
+        if (pendingParentUpdate.current && onUpdate) {
+            const timeoutId = setTimeout(() => {
+                onUpdate(formDataRef.current);
+                pendingParentUpdate.current = false;
+            }, 300); // Debounce updates
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [formData, onUpdate]);
 
     const [expandedSections, setExpandedSections] = useState({
         personal: true,
@@ -575,8 +590,7 @@ export default function ResumeEditor({
             }
 
             setUnsavedChanges(true);
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            pendingParentUpdate.current = true;
 
             return newData;
         });
@@ -592,7 +606,7 @@ export default function ResumeEditor({
             });
             setValidationErrors(errors);
         }
-    }, []); // Remove onUpdate from dependencies
+    }, []);
 
     const handleArrayChange = useCallback((section, index, field, value) => {
         setFormData(prev => {
@@ -607,12 +621,11 @@ export default function ResumeEditor({
             const newData = { ...prev, [section]: updated };
 
             setUnsavedChanges(true);
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            pendingParentUpdate.current = true;
 
             return newData;
         });
-    }, []); // Remove onUpdate from dependencies
+    }, []);
 
     const addArrayItem = useCallback((section, defaultItem) => {
         setFormData(prev => {
@@ -623,8 +636,7 @@ export default function ResumeEditor({
             };
 
             setUnsavedChanges(true);
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            pendingParentUpdate.current = true;
 
             toast({
                 title: `✨ Added new ${section.slice(0, -1)}`,
@@ -633,7 +645,7 @@ export default function ResumeEditor({
 
             return newData;
         });
-    }, [toast]); // Remove onUpdate from dependencies
+    }, [toast]);
 
     const removeArrayItem = useCallback((section, index) => {
         setFormData(prev => {
@@ -643,8 +655,7 @@ export default function ResumeEditor({
             };
 
             setUnsavedChanges(true);
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            pendingParentUpdate.current = true;
 
             toast({
                 title: "🗑️ Item removed",
@@ -653,7 +664,7 @@ export default function ResumeEditor({
 
             return newData;
         });
-    }, [toast]); // Remove onUpdate from dependencies
+    }, [toast]);
 
     const moveArrayItem = useCallback((section, fromIndex, toIndex) => {
         setFormData(prev => {
@@ -663,12 +674,11 @@ export default function ResumeEditor({
             const newData = { ...prev, [section]: updated };
 
             setUnsavedChanges(true);
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            pendingParentUpdate.current = true;
 
             return newData;
         });
-    }, []); // Remove onUpdate from dependencies
+    }, []);
 
     const handleFileUpload = useCallback(async (e) => {
         const file = e.target.files[0];
@@ -719,11 +729,17 @@ export default function ResumeEditor({
 
             // Use the imported database converter function
             const flexibleData = convertDatabaseToFlexibleFormat(result);
+
+            // Mark that we're updating from parent to avoid feedback loop
+            isUpdatingFromParent.current = true;
+
             setFormData(flexibleData);
             setUnsavedChanges(true);
 
-            // Mark that we should notify parent after render
-            shouldNotifyParent.current = true;
+            // Reset the flag
+            setTimeout(() => {
+                isUpdatingFromParent.current = false;
+            }, 100);
 
             // Notify parent separately if needed
             if (onPDFUpload) {
@@ -748,6 +764,8 @@ export default function ResumeEditor({
         }
     }, [uploadResume, user, onPDFUpload, toast]);
 
+    // In ResumeEditor.jsx - Update the handleSave function
+
     const handleSave = async () => {
         // Validate before saving
         const validation = validateResumeData(formData);
@@ -763,10 +781,78 @@ export default function ResumeEditor({
         setAutoSaveStatus('saving');
 
         try {
-            const oldFormatData = convertToOldFormat(formData);
+            // First, clean up URLs to ensure they're valid
+            const cleanedFormData = JSON.parse(JSON.stringify(formData)); // Deep clone
 
-            // Add required fields and remove any ID fields
+            // Clean URLs in personal section
+            if (cleanedFormData.personal) {
+                // Function to validate and clean URL
+                const cleanUrl = (url) => {
+                    if (!url || url.trim() === '') return '';
+
+                    // Remove any whitespace
+                    let cleaned = url.trim();
+
+                    // If it's already a valid URL, return it
+                    try {
+                        new URL(cleaned);
+                        return cleaned;
+                    } catch {
+                        // Not a valid URL, try to fix it
+                        if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+                            cleaned = 'https://' + cleaned;
+                        }
+
+                        // Try again
+                        try {
+                            new URL(cleaned);
+                            return cleaned;
+                        } catch {
+                            // Still invalid, return empty string
+                            return '';
+                        }
+                    }
+                };
+
+                // Clean each URL field
+                cleanedFormData.personal.portfolio_url = cleanUrl(cleanedFormData.personal.portfolio_url);
+                cleanedFormData.personal.linkedin_url = cleanUrl(cleanedFormData.personal.linkedin_url);
+                cleanedFormData.personal.github_url = cleanUrl(cleanedFormData.personal.github_url);
+            }
+
+            // Clean URLs in projects
+            if (cleanedFormData.projects && Array.isArray(cleanedFormData.projects)) {
+                cleanedFormData.projects = cleanedFormData.projects.map(project => ({
+                    ...project,
+                    url: project.url ? cleanUrl(project.url) : ''
+                }));
+            }
+
+            // Clean URLs in certifications
+            if (cleanedFormData.certifications && Array.isArray(cleanedFormData.certifications)) {
+                cleanedFormData.certifications = cleanedFormData.certifications.map(cert => ({
+                    ...cert,
+                    url: cert.url ? cleanUrl(cert.url) : ''
+                }));
+            }
+
+            const oldFormatData = convertToOldFormat(cleanedFormData);
+
+            // Remove any fields that might cause issues
             const { resume_id, id, ...cleanData } = oldFormatData;
+
+            // Ensure all URL fields are either valid URLs or empty strings
+            const urlFields = ['portfolio_url', 'linkedin_url', 'github_url',];
+            urlFields.forEach(field => {
+                if (cleanData[field] && typeof cleanData[field] === 'string') {
+                    try {
+                        new URL(cleanData[field]);
+                    } catch {
+                        // If invalid, set to empty string
+                        cleanData[field] = '';
+                    }
+                }
+            });
 
             const resumeToSave = {
                 ...cleanData,
@@ -774,7 +860,7 @@ export default function ResumeEditor({
                 template: template || 'modern',
             };
 
-            console.log('Saving resume:', resumeToSave);
+            console.log('Saving resume with cleaned URLs:', resumeToSave);
 
             // Call your API to save
             const result = await createResume(resumeToSave);
@@ -791,6 +877,7 @@ export default function ResumeEditor({
 
             setTimeout(() => setAutoSaveStatus(null), 2000);
         } catch (error) {
+            console.error('Save error:', error);
             setAutoSaveStatus('error');
             toast({
                 title: "❌ Save Failed",
@@ -855,6 +942,24 @@ export default function ResumeEditor({
                 <span className={className}>{text}</span>
             </motion.div>
         );
+    };
+
+    const isValidUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) return false;
+
+        try {
+            if (!/^https?:\/\//i.test(trimmedUrl)) {
+                return false;
+            }
+            const urlObj = new URL(trimmedUrl);
+            const hostname = urlObj.hostname;
+            return hostname && hostname.length >= 3 && hostname.includes('.');
+        } catch (e) {
+            return false;
+        }
     };
 
     return (
@@ -977,6 +1082,18 @@ export default function ResumeEditor({
                                     </label>
                                     <input
                                         type="text"
+                                        value={formData.personal?.job_title || ''}
+                                        onChange={(e) => handleChange('personal', 'job_title', e.target.value)}
+                                        className={inputClasses}
+                                        placeholder="Full Stack Developer"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">
+                                        Professional Sub Headline
+                                    </label>
+                                    <input
+                                        type="text"
                                         value={formData.personal?.headline || ''}
                                         onChange={(e) => handleChange('personal', 'headline', e.target.value)}
                                         className={inputClasses}
@@ -1035,48 +1152,185 @@ export default function ResumeEditor({
                                 </div>
                             </div>
 
+                            {/* Display Name Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-300">Website</label>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">Portfolio Display Name</label>
+                                    <div className="relative">
+                                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            value={formData.personal?.portfolio_display || ''}
+                                            onChange={(e) => handleChange('personal', 'portfolio_display', e.target.value)}
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="My Portfolio"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">LinkedIn Display Name</label>
+                                    <div className="relative">
+                                        <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            value={formData.personal?.linkedin_display || ''}
+                                            onChange={(e) => handleChange('personal', 'linkedin_display', e.target.value)}
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="John Doe"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">GitHub Display Name</label>
+                                    <div className="relative">
+                                        <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            value={formData.personal?.github_display || ''}
+                                            onChange={(e) => handleChange('personal', 'github_display', e.target.value)}
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="johndoe"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* URL Fields */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">Portfolio URL</label>
                                     <div className="relative">
                                         <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                         <input
                                             type="url"
-                                            value={formData.personal?.website || ''}
-                                            onChange={(e) => handleChange('personal', 'website', e.target.value)}
-                                            className={`${inputClasses} pl-10`}
+                                            value={formData.personal?.portfolio_url || ''}
+                                            onChange={(e) => {
+                                                handleChange('personal', 'portfolio_url', e.target.value);
+                                            }}
+                                            onBlur={(e) => {
+                                                let value = e.target.value;
+                                                if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
+                                                    // Auto-add https://
+                                                    handleChange('personal', 'portfolio_url', `https://${value}`);
+                                                }
+                                            }}
+                                            className={`${inputClasses} pl-10 ${formData.personal?.portfolio_url &&
+                                                !isValidUrl(formData.personal?.portfolio_url) ? 'border-yellow-500' : ''
+                                                }`}
                                             placeholder="https://johndoe.com"
                                         />
+                                        {formData.personal?.portfolio_url && !isValidUrl(formData.personal?.portfolio_url) && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <AlertCircle className="w-4 h-4 text-yellow-500" />
+                                            </div>
+                                        )}
                                     </div>
+                                    {formData.personal?.portfolio_url && !isValidUrl(formData.personal?.portfolio_url) && (
+                                        <p className="mt-1 text-xs text-yellow-500">
+                                            Please enter a valid URL (e.g., https://example.com)
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-300">LinkedIn</label>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">
+                                        LinkedIn URL
+                                    </label>
                                     <div className="relative">
                                         <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                         <input
                                             type="url"
-                                            value={formData.personal?.linkedin || ''}
-                                            onChange={(e) => handleChange('personal', 'linkedin', e.target.value)}
-                                            className={`${inputClasses} pl-10`}
-                                            placeholder="linkedin.com/in/johndoe"
+                                            value={formData.personal?.linkedin_url || ''}
+                                            onChange={(e) => {
+                                                handleChange('personal', 'linkedin_url', e.target.value);
+                                            }}
+                                            onBlur={(e) => {
+                                                let value = e.target.value;
+                                                if (
+                                                    value &&
+                                                    !value.startsWith('http://') &&
+                                                    !value.startsWith('https://')
+                                                ) {
+                                                    handleChange('personal', 'linkedin_url', `https://${value}`);
+                                                }
+                                            }}
+                                            className={`${inputClasses} pl-10 ${formData.personal?.linkedin_url &&
+                                                !isValidUrl(formData.personal?.linkedin_url)
+                                                ? 'border-yellow-500'
+                                                : ''
+                                                }`}
+                                            placeholder="https://linkedin.com/in/johndoe"
                                         />
+                                        {formData.personal?.linkedin_url &&
+                                            !isValidUrl(formData.personal?.linkedin_url) && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <AlertCircle className="w-4 h-4 text-yellow-500" />
+                                                </div>
+                                            )}
                                     </div>
+
+                                    {formData.personal?.linkedin_url &&
+                                        !isValidUrl(formData.personal?.linkedin_url) && (
+                                            <p className="mt-1 text-xs text-yellow-500">
+                                                Please enter a valid URL (e.g., https://linkedin.com/in/username)
+                                            </p>
+                                        )}
                                 </div>
 
                                 <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-300">GitHub</label>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">
+                                        GitHub URL
+                                    </label>
                                     <div className="relative">
                                         <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                         <input
                                             type="url"
-                                            value={formData.personal?.github || ''}
-                                            onChange={(e) => handleChange('personal', 'github', e.target.value)}
-                                            className={`${inputClasses} pl-10`}
-                                            placeholder="github.com/johndoe"
+                                            value={formData.personal?.github_url || ''}
+                                            onChange={(e) => {
+                                                handleChange('personal', 'github_url', e.target.value);
+                                            }}
+                                            onBlur={(e) => {
+                                                let value = e.target.value;
+                                                if (
+                                                    value &&
+                                                    !value.startsWith('http://') &&
+                                                    !value.startsWith('https://')
+                                                ) {
+                                                    handleChange('personal', 'github_url', `https://${value}`);
+                                                }
+                                            }}
+                                            className={`${inputClasses} pl-10 ${formData.personal?.github_url &&
+                                                !isValidUrl(formData.personal?.github_url)
+                                                ? 'border-yellow-500'
+                                                : ''
+                                                }`}
+                                            placeholder="https://github.com/johndoe"
                                         />
+                                        {formData.personal?.github_url &&
+                                            !isValidUrl(formData.personal?.github_url) && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                    <AlertCircle className="w-4 h-4 text-yellow-500" />
+                                                </div>
+                                            )}
                                     </div>
+
+                                    {formData.personal?.github_url &&
+                                        !isValidUrl(formData.personal?.github_url) && (
+                                            <p className="mt-1 text-xs text-yellow-500">
+                                                Please enter a valid URL (e.g., https://github.com/username)
+                                            </p>
+                                        )}
                                 </div>
+                            </div>
+
+                            {/* Help text */}
+                            <div className="flex items-start gap-2 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
+                                <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-blue-400">
+                                    URLs will automatically get https:// if you forget to add it. Make sure to include the full URL for proper linking.
+                                </p>
                             </div>
                         </div>
                     </Section>
@@ -1490,33 +1744,4 @@ export default function ResumeEditor({
             `}</style>
         </div>
     );
-}
-
-// Helper function for empty form data
-function getEmptyFormData() {
-    return {
-        personal: {
-            full_name: '',
-            headline: '',
-            email: '',
-            phone: '',
-            location: '',
-            website: '',
-            linkedin: '',
-            github: '',
-            twitter: '',
-        },
-        summary: { summary: '' },
-        experience: [],
-        education: [],
-        skills: { technical: [], soft: [], languages: [] },
-        projects: [],
-        certifications: [],
-        languages: [],
-        publications: [],
-        awards: [],
-        volunteering: [],
-        interests: [],
-        customSections: {}
-    };
 }

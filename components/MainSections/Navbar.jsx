@@ -58,7 +58,7 @@ export default function Navbar() {
         <>
             <nav className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled
                 ? 'bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-lg'
-                : 'bg-transparent'
+                : 'bg-[#000000a0]'
                 }`}>
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16 md:h-20">
@@ -162,7 +162,7 @@ export default function Navbar() {
                                 transition={{ duration: 0.3 }}
                                 className="md:hidden mobile-menu overflow-hidden"
                             >
-                                <div className="py-4 space-y-2 border-t border-gray-800">
+                                <div className="py-4 space-y-2 border-t border-gray-800 ">
                                     {navLinks.map((link) => (
                                         <Link
                                             key={link.href}

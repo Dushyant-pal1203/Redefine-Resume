@@ -163,13 +163,13 @@ export default function ResumeListPage() {
     return (
         <div className="space-y-6 p-6 bg-gray-950/20 min-h-screen">
             {/* Header Section */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 mb-8 md:mb-10">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">
+                    <h1 className="text-3xl md:text-5xl font-bold text-white">
                         Welcome back, {user?.name || 'User'}!
                         <div className="bg-linear-to-r from-purple-400 to-cyan-400 mt-2 w-28 h-1"></div>
                     </h1>
-                    <p className="text-gray-300 mt-1">Manage and organize your resume collection</p>
+                    <p className="text-lg text-gray-300 mt-1">Manage and organize your resume collection</p>
                 </div>
                 <Button
                     onClick={handleCreateNewResume}
@@ -244,7 +244,7 @@ export default function ResumeListPage() {
                         <Button variant="outline" size="icon">
                             <SortAsc className="w-5 h-5" />
                         </Button>
-                        <div className="flex border border-gray-800 rounded-lg overflow-hidden">
+                        <div className="flex border border-gray-800 rounded-lg overflow-hidden gap-1">
                             <Button
                                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                                 size="icon"
