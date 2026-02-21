@@ -37,7 +37,7 @@ export default function HeroSection() {
 
                             {/* Button Section */}
                             <PdfUpload
-                                className="justify-items-start"
+                                className="justify-items-center sm:justify-items-start"
                                 userId={user?.id}
                                 showDragDrop={false} />
                         </div>

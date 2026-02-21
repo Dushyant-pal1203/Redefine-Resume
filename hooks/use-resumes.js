@@ -73,6 +73,8 @@ export function useResumes() {
     }
   }, [isAuthenticated, user?.id, toast, getToken]);
 
+  // hooks/use-resumes.js - Update the createResume function
+
   const createResume = useCallback(
     async (resumeData) => {
       if (!isAuthenticated || !user?.id) {
@@ -90,8 +92,63 @@ export function useResumes() {
 
         const token = getToken();
 
+        // Deep clone and clean the data
+        const cleanedData = JSON.parse(JSON.stringify(resumeData));
+
+        // Helper function to validate URL
+        const isValidUrl = (string) => {
+          if (!string) return true; // Empty is allowed
+          try {
+            new URL(string);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+
+        // Validate all URL fields
+        const urlFields = [
+          "portfolio_url",
+          "linkedin_url",
+          "github_url",
+          "twitter_url",
+        ];
+        for (const field of urlFields) {
+          if (cleanedData[field] && !isValidUrl(cleanedData[field])) {
+            // If invalid, remove it
+            delete cleanedData[field];
+          }
+        }
+
+        // Validate URLs in projects
+        if (cleanedData.projects && Array.isArray(cleanedData.projects)) {
+          cleanedData.projects = cleanedData.projects.map((project) => {
+            if (project.url && !isValidUrl(project.url)) {
+              const { url, ...rest } = project;
+              return rest;
+            }
+            return project;
+          });
+        }
+
+        // Validate URLs in certifications
+        if (
+          cleanedData.certifications &&
+          Array.isArray(cleanedData.certifications)
+        ) {
+          cleanedData.certifications = cleanedData.certifications.map(
+            (cert) => {
+              if (cert.url && !isValidUrl(cert.url)) {
+                const { url, ...rest } = cert;
+                return rest;
+              }
+              return cert;
+            },
+          );
+        }
+
         // Ensure we're not sending resume_id or id
-        const { resume_id, id, ...cleanData } = resumeData;
+        const { resume_id, id, ...cleanData } = cleanedData;
 
         // Add required fields with defaults
         const dataToSend = {
@@ -105,7 +162,7 @@ export function useResumes() {
           is_public: cleanData.is_public || false,
         };
 
-        console.log("Creating resume with data:", dataToSend);
+        console.log("Creating resume with validated data:", dataToSend);
 
         const response = await fetch(`${API_BASE_URL}/api/resumes`, {
           method: "POST",
@@ -146,6 +203,116 @@ export function useResumes() {
     [isAuthenticated, user?.id, toast, getToken],
   );
 
+  // Also update the updateResume function similarly
+  const updateResume = useCallback(
+    async (resumeId, resumeData) => {
+      if (!resumeId) return null;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const token = getToken();
+
+        // Deep clone and clean the data
+        const cleanedData = JSON.parse(JSON.stringify(resumeData));
+
+        // Helper function to validate URL
+        const isValidUrl = (string) => {
+          if (!string) return true; // Empty is allowed
+          try {
+            new URL(string);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+
+        // Validate all URL fields
+        const urlFields = [
+          "portfolio_url",
+          "linkedin_url",
+          "github_url",
+          "twitter_url",
+        ];
+        for (const field of urlFields) {
+          if (cleanedData[field] && !isValidUrl(cleanedData[field])) {
+            // If invalid, remove it
+            delete cleanedData[field];
+          }
+        }
+
+        // Validate URLs in projects
+        if (cleanedData.projects && Array.isArray(cleanedData.projects)) {
+          cleanedData.projects = cleanedData.projects.map((project) => {
+            if (project.url && !isValidUrl(project.url)) {
+              const { url, ...rest } = project;
+              return rest;
+            }
+            return project;
+          });
+        }
+
+        // Validate URLs in certifications
+        if (
+          cleanedData.certifications &&
+          Array.isArray(cleanedData.certifications)
+        ) {
+          cleanedData.certifications = cleanedData.certifications.map(
+            (cert) => {
+              if (cert.url && !isValidUrl(cert.url)) {
+                const { url, ...rest } = cert;
+                return rest;
+              }
+              return cert;
+            },
+          );
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/resumes/${resumeId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(cleanedData),
+            credentials: "include",
+          },
+        );
+
+        const result = await response.json();
+
+        if (result.success) {
+          setResumes((prev) =>
+            prev.map((r) => (r.resume_id === resumeId ? result.data : r)),
+          );
+
+          toast({
+            title: "✅ Success",
+            description: "Resume updated successfully",
+          });
+          return result.data;
+        } else {
+          throw new Error(result.error || "Failed to update resume");
+        }
+      } catch (err) {
+        console.error("Error updating resume:", err);
+        setError(err.message);
+        toast({
+          title: "❌ Error",
+          description: err.message || "Failed to update resume",
+          variant: "destructive",
+        });
+        return null;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [toast, getToken],
+  );
+
   const fetchResumeById = useCallback(
     async (resumeId) => {
       if (!resumeId) return null;
@@ -179,59 +346,6 @@ export function useResumes() {
         toast({
           title: "❌ Error",
           description: "Failed to load resume",
-          variant: "destructive",
-        });
-        return null;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [toast, getToken],
-  );
-
-  const updateResume = useCallback(
-    async (resumeId, resumeData) => {
-      if (!resumeId) return null;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const token = getToken();
-        const response = await fetch(
-          `${API_BASE_URL}/api/resumes/${resumeId}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(resumeData),
-            credentials: "include",
-          },
-        );
-
-        const result = await response.json();
-
-        if (result.success) {
-          setResumes((prev) =>
-            prev.map((r) => (r.resume_id === resumeId ? result.data : r)),
-          );
-
-          toast({
-            title: "✅ Success",
-            description: "Resume updated successfully",
-          });
-          return result.data;
-        } else {
-          throw new Error(result.error || "Failed to update resume");
-        }
-      } catch (err) {
-        console.error("Error updating resume:", err);
-        setError(err.message);
-        toast({
-          title: "❌ Error",
-          description: err.message || "Failed to update resume",
           variant: "destructive",
         });
         return null;

@@ -201,18 +201,18 @@ export default function TemplateSection() {
         <section id="templates" className="py-20 px-6 bg-no-repeat bg-center bg-contain">
             <div className="container mx-auto max-w-7xl">
                 {/* Header and View All Button */}
-                <div className="flex items-center justify-between mb-10 ">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 mb-8 md:mb-10">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="text-center md:text-left"
+                        className="text-center md:text-left w-full md:w-auto"
                     >
                         <h2 className="text-5xl md:text-6xl font-bold mb-6">
                             <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
                                 TEMPLATES
                             </span>
-                            <span className="text-white ml-4">GALAXY</span>
+                            <span className="text-white block sm:inline mt-1 sm:mt-0 sm:ml-4">GALAXY</span>
                         </h2>
                         <p className="text-xl text-gray-300">
                             Choose a template or upload your PDF - we'll handle the rest for you.
@@ -224,22 +224,21 @@ export default function TemplateSection() {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="flex justify-center"
+                        className="flex justify-center w-full md:w-auto"
                     >
-                        <div className="relative group">
+                        <div className="relative justify-items-center group w-full sm:w-auto">
                             {/* Glow effect */}
                             <div className="absolute -inset-1 bg-linear-to-r from-amber-300 to-cyan-200 rounded-xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
 
                             {/* Button */}
                             <Button
                                 onClick={handleViewAllTemplates}
-                                className="bg-transparent hover:bg-[#05232588]! relative px-8 py-6 text-lg border border-gray-800 hover:border-cyan-400 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 transform hover:-translate-y-1"
+                                className=" justify-center bg-transparent hover:bg-[#05232588]! relative px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg border border-gray-800 hover:border-cyan-400 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 transform hover:-translate-y-1"
                             >
-
                                 {/* Main button content */}
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center gap-2 sm:gap-3">
                                     <span>TEMPLATES</span>
-                                    <span className="text-cyan-400">✦</span>
+                                    <span className="text-cyan-400 text-xl sm:text-2xl">✦</span>
                                     <span>GALLERY</span>
                                 </div>
                             </Button>

@@ -1,4 +1,3 @@
-// app/editor/page.jsx
 "use client";
 
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
@@ -25,7 +24,11 @@ import {
     Zap,
     Shield,
     Globe,
-    Lock
+    Lock,
+    Menu,
+    X,
+    Download,
+    ChevronDown
 } from "lucide-react";
 import ResumeEditor from '@/components/EditorSection/ResumeEditor';
 import LivePreview from '@/components/EditorSection/LivePreview';
@@ -62,11 +65,30 @@ function EditorContent() {
     const [autoSaveTimer, setAutoSaveTimer] = useState(null);
     const [isLoadingResume, setIsLoadingResume] = useState(false);
 
+    // Mobile states
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [activeMobileView, setActiveMobileView] = useState('editor'); // 'editor' or 'preview'
+    const [isMobile, setIsMobile] = useState(false);
+
     // Refs
     const hasLoadedData = useRef(false);
     const mountedRef = useRef(true);
     const downloadRef = useRef(null);
     const editorRef = useRef(null);
+
+    // Check if mobile on mount and resize
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+            if (window.innerWidth < 768) {
+                setPreviewMode('editor'); // Default to editor on mobile
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Computed
     const firstName = resumeData.personal?.full_name?.split(' ')[0] || 'Untitled';
@@ -358,6 +380,7 @@ function EditorContent() {
 
     const handleTemplateChange = useCallback((templateId) => {
         setSelectedTemplate(templateId);
+        setIsMobileMenuOpen(false);
         toast({
             title: "🎨 Template Changed",
             description: `Switched to ${templates.find(t => t.id === templateId)?.name || templateId} template.`,
@@ -383,7 +406,25 @@ function EditorContent() {
     const resetToAutoTitle = useCallback(() => {
         setIsAutoTitleEnabled(true);
         setResumeTitle(`${firstName}'s Resume`);
+        setIsMobileMenuOpen(false);
     }, [firstName]);
+
+
+    // Template dropdown state
+    const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+    const templateRef = useRef(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (templateRef.current && !templateRef.current.contains(event.target)) {
+                setIsTemplateOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     // Loading state
     if (templatesLoading || isFetchingResume) {
@@ -392,13 +433,13 @@ function EditorContent() {
                 <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center gap-6"
+                    className="flex flex-col items-center gap-6 px-4 text-center"
                 >
                     <div className="relative">
                         <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
                         <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
                     </div>
-                    <div className="text-center">
+                    <div>
                         <h2 className="text-white text-2xl font-bold mb-2">Loading Resume</h2>
                         <p className="text-gray-400">Preparing your workspace...</p>
                     </div>
@@ -409,10 +450,11 @@ function EditorContent() {
 
     return (
         <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900/10 to-gray-900">
-            {/* Top Navigation */}
+            {/* Mobile Top Navigation */}
             <header className="sticky top-0 z-40 bg-black/40 backdrop-blur-xl border-b border-white/10">
-                <div className="container mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
+                <div className="container mx-auto px-3 py-2 md:py-3">
+                    {/* Desktop Header */}
+                    <div className="hidden md:flex items-center justify-between gap-4">
                         {/* Left Section */}
                         <div className="flex items-center gap-3 flex-1">
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -502,19 +544,53 @@ function EditorContent() {
                         {/* Center Section - Template & Layout Controls */}
                         <div className="hidden lg:flex items-center gap-3">
                             {/* Template Selector */}
-                            <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10">
+                            <div
+                                ref={templateRef}
+                                className="relative flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10"
+                            >
                                 <Palette className="w-4 h-4 text-purple-400" />
-                                <select
-                                    value={selectedTemplate}
-                                    onChange={(e) => handleTemplateChange(e.target.value)}
-                                    className="bg-transparent text-white border-none focus:outline-none focus:ring-0 text-sm cursor-pointer"
+
+                                <button
+                                    type="button"
+                                    onClick={() => setIsTemplateOpen((prev) => !prev)}
+                                    className="flex items-center gap-2 text-sm text-white hover:text-purple-300 transition"
                                 >
-                                    {templates.map((template) => (
-                                        <option key={template.id} value={template.id} className="bg-gray-900">
-                                            {template.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    {templates.find(t => t.id === selectedTemplate)?.name || "Select Template"}
+                                    <ChevronDown
+                                        className={`w-4 h-4 transition-transform duration-200 ${isTemplateOpen ? "rotate-180" : ""
+                                            }`}
+                                    />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isTemplateOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                            transition={{ duration: 0.18 }}
+                                            className="absolute top-full left-0 mt-2 w-52 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-purple-500/20 z-50 overflow-hidden"
+                                        >
+                                            {templates.map((template) => (
+                                                <button
+                                                    key={template.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        handleTemplateChange(template.id);
+                                                        setIsTemplateOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-all duration-150
+                            ${selectedTemplate === template.id
+                                                            ? "bg-purple-600/20 text-purple-300"
+                                                            : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                                        }`}
+                                                >
+                                                    {template.name}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             {/* Layout Toggle */}
@@ -659,70 +735,386 @@ function EditorContent() {
                                     showLabel={true}
                                     className=" bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
-
                             </motion.div>
                         </div>
                     </div>
+
+                    {/* Mobile Header */}
+                    <div className="flex md:hidden items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleBack}
+                                    className="text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 h-9 w-9 justify-center"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                </Button>
+                            </motion.div>
+
+                            <div className="relative flex-1 min-w-35">
+                                <div className="relative flex items-center">
+                                    <FileText className="absolute left-2 w-3 h-3 text-purple-400" />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-7 pr-6 py-2 text-sm bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white placeholder-gray-400"
+                                        placeholder="Title..."
+                                        value={resumeTitle}
+                                        onChange={handleTitleChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            {/* View Toggle for Mobile */}
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/10 mr-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-8 w-8 justify-center ${activeMobileView === 'editor' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setActiveMobileView('editor')}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-8 w-8 justify-center ${activeMobileView === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setActiveMobileView('preview')}
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 h-9 w-9 justify-center"
+                            >
+                                {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Expanded Menu */}
+                    <AnimatePresence>
+                        {isMobileMenuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="md:hidden mt-3 overflow-hidden"
+                            >
+                                <div className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-lg p-3 space-y-3">
+                                    {/* Template Selector */}
+                                    <div ref={templateRef} className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsTemplateOpen((prev) => !prev)}
+                                            className="flex items-center justify-between w-full px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-white text-sm"
+                                        >
+                                            {templates.find(t => t.id === selectedTemplate)?.name || "Select Template"}
+                                            <ChevronDown
+                                                className={`w-4 h-4 transition-transform duration-200 ${isTemplateOpen ? "rotate-180" : ""
+                                                    }`}
+                                            />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isTemplateOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -5 }}
+                                                    transition={{ duration: 0.18 }}
+                                                    className="absolute mt-2 w-full bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                                                >
+                                                    {templates.map((template) => (
+                                                        <button
+                                                            key={template.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleTemplateChange(template.id);
+                                                                setIsMobileMenuOpen(false);
+                                                                setIsTemplateOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2.5 text-sm transition
+                            ${selectedTemplate === template.id
+                                                                    ? "bg-purple-600/20 text-purple-300"
+                                                                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                                                }`}
+                                                        >
+                                                            {template.name}
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Title Suggestions */}
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-1 block">Title Suggestions</label>
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {[
+                                                `${firstName}'s Resume`,
+                                                `${firstName} - Profile`,
+                                                `${firstName} | CV`,
+                                                `Resume of ${firstName}`,
+                                            ].map((suggestion, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => {
+                                                        setResumeTitle(suggestion);
+                                                        setIsAutoTitleEnabled(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="text-left px-2 py-1.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
+                                                >
+                                                    {suggestion}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={resetToAutoTitle}
+                                            className="mt-2 w-full text-left px-2 py-1.5 text-xs text-purple-400 hover:text-purple-300 hover:bg-white/10 rounded transition-colors"
+                                        >
+                                            <Sparkles className="w-3 h-3 inline mr-1" />
+                                            Enable Auto-Title
+                                        </button>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-1 block">Actions</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {/* Auto-save Indicator */}
+                                            {autoSave && lastSaved && (
+                                                <div className="flex items-center gap-1 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
+                                                    <Clock className="w-3 h-3 text-gray-400" />
+                                                    <span className="text-xs text-gray-400">
+                                                        {new Date(lastSaved).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Public/Private Toggle */}
+                                            {resumeId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleTogglePublic}
+                                                    disabled={isTogglingPublic}
+                                                    className={`bg-white/5 hover:bg-white/10 border border-white/10 ${isPublic ? 'text-emerald-400' : 'text-gray-400'}`}
+                                                >
+                                                    {isTogglingPublic ? (
+                                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                    ) : isPublic ? (
+                                                        <Globe className="w-3 h-3 mr-1" />
+                                                    ) : (
+                                                        <Lock className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    {isPublic ? 'Public' : 'Private'}
+                                                </Button>
+                                            )}
+
+                                            {/* Auto-save Toggle */}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setAutoSave(!autoSave)}
+                                                className={`bg-white/5 hover:bg-white/10 border border-white/10 ${autoSave ? 'text-purple-400' : 'text-gray-400'}`}
+                                            >
+                                                <Zap className="w-3 h-3 mr-1" />
+                                                {autoSave ? 'Auto On' : 'Auto Off'}
+                                            </Button>
+
+                                            {/* Editor Density */}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setEditorLayout(editorLayout === 'comfortable' ? 'compact' : 'comfortable')}
+                                                className="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400"
+                                            >
+                                                {editorLayout === 'comfortable' ? <Minimize2 className="w-3 h-3 mr-1" /> : <Maximize2 className="w-3 h-3 mr-1" />}
+                                                {editorLayout === 'comfortable' ? 'Compact' : 'Comfortable'}
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Save & Download */}
+                                    <div className="flex gap-2 pt-2">
+                                        <Button
+                                            onClick={() => {
+                                                handleSave(false);
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                            className="flex-1 justify-center bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 text-white"
+                                            disabled={isSaving || !canSave}
+                                        >
+                                            {saveSuccess ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Saved!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                    {isSaving ? 'Saving...' : 'Save'}
+                                                </>
+                                            )}
+                                        </Button>
+
+                                        <DownloadPDF
+                                            ref={downloadRef}
+                                            resumeId={resumeId}
+                                            filename={`${resumeData.full_name || 'resume'}-${resumeData.template || 'modern'}.pdf`}
+                                            variant="default"
+                                            size="default"
+                                            label="PDF"
+                                            showIcon={true}
+                                            showLabel={true}
+                                            className="flex-1 justify-center bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white"
+                                        />
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </header>
 
             {/* Main Content */}
-            <div className={`flex min-h-[calc(100vh-73px)] transition-all duration-300`}>
-                {/* Editor Panel */}
-                <AnimatePresence mode="wait">
-                    {(previewMode === 'split' || previewMode === 'editor') && (
-                        <motion.div
-                            key="editor"
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: -20, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className={`
-                    ${previewMode === 'split' ? 'w-2/6' : 'w-full'}
-                    border-r border-white/10 bg-black/20 backdrop-blur-sm
-                `}
-                        >
-                            <div ref={editorRef} className="h-full overflow-y-auto custom-scrollbar">
-                                <ResumeEditor
-                                    resumeData={resumeData}
-                                    onUpdate={handleUpdate}
-                                    onPDFUpload={handlePDFUpload}
-                                    layout={editorLayout}
-                                    template={selectedTemplate}
-                                />
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+            <div className="flex min-h-[calc(100vh-73px)] md:min-h-[calc(100vh-73px)]">
+                {/* Desktop View - Split/Editor/Preview */}
+                <div className="hidden md:flex w-full">
+                    <AnimatePresence mode="wait">
+                        {(previewMode === 'split' || previewMode === 'editor') && (
+                            <motion.div
+                                key="editor"
+                                initial={{ x: -20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: -20, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className={`
+                                    ${previewMode === 'split' ? 'w-2/6' : 'w-full'}
+                                    border-r border-white/10 bg-black/20 backdrop-blur-sm
+                                `}
+                            >
+                                <div ref={editorRef} className="h-full overflow-y-auto custom-scrollbar">
+                                    <ResumeEditor
+                                        resumeData={resumeData}
+                                        onUpdate={handleUpdate}
+                                        onPDFUpload={handlePDFUpload}
+                                        layout={editorLayout}
+                                        template={selectedTemplate}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                {/* Preview Panel */}
-                <AnimatePresence mode="wait">
-                    {(previewMode === 'split' || previewMode === 'preview') && (
-                        <motion.div
-                            key="preview"
-                            initial={{ x: 20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: 20, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className={`
-                    ${previewMode === 'split' ? 'w-4/6' : 'w-full'}
-                    bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50 backdrop-blur-sm
-                `}
-                        >
-                            <div className="h-full overflow-y-auto custom-scrollbar">
-                                <div className="p-1 pb-4">
-                                    <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
-                                        <LivePreview
-                                            resumeData={resumeData}
-                                            template={selectedTemplate}
-                                        />
+                    <AnimatePresence mode="wait">
+                        {(previewMode === 'split' || previewMode === 'preview') && (
+                            <motion.div
+                                key="preview"
+                                initial={{ x: 20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: 20, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className={`
+                                    ${previewMode === 'split' ? 'w-4/6' : 'w-full'}
+                                    bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50 backdrop-blur-sm
+                                `}
+                            >
+                                <div className="h-full overflow-y-auto custom-scrollbar">
+                                    <div className="p-1 pb-4">
+                                        <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+                                            <LivePreview
+                                                resumeData={resumeData}
+                                                template={selectedTemplate}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Mobile View - Single Panel */}
+                <div className="md:hidden w-full">
+                    {activeMobileView === 'editor' ? (
+                        <div className="h-full overflow-y-auto custom-scrollbar">
+                            <ResumeEditor
+                                resumeData={resumeData}
+                                onUpdate={handleUpdate}
+                                onPDFUpload={handlePDFUpload}
+                                layout={editorLayout}
+                                template={selectedTemplate}
+                            />
+                        </div>
+                    ) : (
+                        <div className="h-full overflow-y-auto custom-scrollbar bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50">
+                            <div className="p-2 pb-4">
+                                <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+                                    <LivePreview
+                                        resumeData={resumeData}
+                                        template={selectedTemplate}
+                                    />
+                                </div>
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                </AnimatePresence>
+                </div>
             </div>
+
+            {/* Mobile Bottom Bar */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-2 z-40">
+                <div className="flex items-center justify-around">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveMobileView('editor')}
+                        className={`flex-1 ${activeMobileView === 'editor' ? 'text-purple-400' : 'text-gray-400'}`}
+                    >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Edit
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveMobileView('preview')}
+                        className={`flex-1 ${activeMobileView === 'preview' ? 'text-purple-400' : 'text-gray-400'}`}
+                    >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSave(false)}
+                        disabled={isSaving || !canSave}
+                        className="flex-1 text-emerald-400"
+                    >
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        Save
+                    </Button>
+                </div>
+            </div>
+
+            {/* Add padding for mobile bottom bar */}
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .min-h-screen {
+                        padding-bottom: 4rem;
+                    }
+                }
+            `}</style>
         </div>
     );
 }
@@ -760,12 +1152,12 @@ export default function EditorPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
-                <div className="flex flex-col items-center gap-6">
+                <div className="flex flex-col items-center gap-6 px-4 text-center">
                     <div className="relative">
                         <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
                         <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
                     </div>
-                    <div className="text-center">
+                    <div>
                         <h2 className="text-white text-2xl font-bold mb-2">Loading Editor</h2>
                         <p className="text-gray-400">Preparing your workspace...</p>
                     </div>
