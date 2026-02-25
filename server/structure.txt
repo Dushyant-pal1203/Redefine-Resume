@@ -1,0 +1,157 @@
+server/
+├── db/
+│   ├── config.js
+│   └── models.js
+├── middleware/
+│   ├── auth.js
+│   └── validation.js
+├── routes/
+│   ├── auth.routes.js
+│   ├── resume.routes.js
+│   ├── template.routes.js
+│   ├── upload.routes.js
+│   └── user.routes.js
+├── services/
+│   ├── pdfGenerator.js
+│   └── pdfParser.js
+├── templates/
+│   ├── modern.js
+│   ├── professional.js
+│   ├── creative.js
+│   └── index.js
+├── utils/
+│   ├── errors.js
+│   └── validators.js
+├── uploads/
+├── .env
+├── .gitignore
+├── index.js
+└── package.json
+
+
+
+
+
+routes\users.routes.js
+
+const express = require("express");
+const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const { protect } = require("../middleware/auth");
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, "../uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log("✅ Uploads directory created:", uploadDir);
+}
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Create unique filename with original extension
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, "resume-" + uniqueSuffix + ext);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept only PDF files
+  if (file.mimetype === "application/pdf") {
+    cb(null, true);
+  } else {
+    cb(new Error("Only PDF files are allowed"), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
+
+// Test route to check if upload router is working
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Upload routes are working",
+    uploadDir: uploadDir,
+  });
+});
+
+// @route   POST /api/upload/resume
+// @desc    Upload a resume PDF
+// @access  Private
+router.post("/resume", protect, (req, res) => {
+  // Use multer upload as middleware
+  upload.single("resume")(req, res, async function (err) {
+    if (err) {
+      // Handle multer errors
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({
+            success: false,
+            message: "File too large. Maximum size is 5MB",
+          });
+        }
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+      // Handle other errors
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        });
+      }
+
+      console.log("File uploaded successfully:", req.file.filename);
+      console.log("User ID:", req.user.id);
+
+      // Here you would typically:
+      // 1. Save file info to database with user_id
+      // 2. Parse the PDF content
+      // 3. Extract resume data
+
+      res.json({
+        success: true,
+        message: "File uploaded successfully",
+        file: {
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          path: req.file.path,
+          size: req.file.size,
+          mimetype: req.file.mimetype,
+          userId: req.user.id,
+        },
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error uploading file",
+        error: error.message,
+      });
+    }
+  });
+});
+
+module.exports = router;
+
