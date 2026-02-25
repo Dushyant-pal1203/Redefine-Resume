@@ -306,7 +306,7 @@ export default function TemplatesPage() {
                         <Button
                             onClick={handleGoBack}
                             variant="ghost"
-                            size="lg"
+                            size="sm"
                             className="bg-[#00f3ff1c]! hover:bg-[#00f3ff30]!  border border-cyan-500/50 group flex items-center text-gray-300 hover:text-white transition-all duration-300"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
@@ -314,7 +314,7 @@ export default function TemplatesPage() {
                         </Button>
 
                         {/* Void Detected Badge */}
-                        <div className="text-lg text-gray-300">
+                        <div className="test-sm sm:text-lg text-gray-300">
                             <span className="text-cyan-400">✦</span> VOID DETECTED
                         </div>
                     </motion.div>
@@ -421,7 +421,7 @@ export default function TemplatesPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5 }}
-                        className="mt-16 text-center"
+                        className="mt-16 text-center justify-items-center"
                     >
                         <Button
                             onClick={handleGoBack}

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, LogOut, Settings, FileText, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, FileText, ChevronDown, Shield, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button";
 
 export default function UserMenu() {
     const [isOpen, setIsOpen] = useState(false);
@@ -28,8 +29,12 @@ export default function UserMenu() {
         await logout();
     };
 
-    const handleNavigation = (path) => {
+    const handleNavigation = (path, tab = null) => {
         setIsOpen(false);
+        if (tab) {
+            // Store the tab in sessionStorage to be used by account_info page
+            sessionStorage.setItem('activeAccountTab', tab);
+        }
         router.push(path);
     };
 
@@ -49,7 +54,7 @@ export default function UserMenu() {
     return (
         <div className="relative" ref={menuRef}>
             {/* User Button */}
-            <button
+            <Button
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-all border border-gray-700 hover:border-purple-500/50 group"
             >
@@ -61,7 +66,7 @@ export default function UserMenu() {
                     <p className="text-xs text-gray-400">{user?.email}</p>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+            </Button>
 
             {/* Dropdown Menu */}
             <AnimatePresence>
@@ -70,12 +75,12 @@ export default function UserMenu() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="relative sm:absolute right-0 mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50"
+                        className="relative sm:absolute right-0  mt-2 w-64 bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50"
                     >
                         {/* User Info */}
                         <div className="p-4 bg-linear-to-r from-purple-600/20 to-cyan-500/20 border-b border-gray-700">
                             <p className="text-white font-medium">{user?.name || 'User'}</p>
-                            <p className="text-sm text-gray-400">{user?.email}</p>
+                            <p className="text-sm text-gray-400 truncate">{user?.email}</p>
                         </div>
 
                         {/* Menu Items */}
@@ -89,20 +94,28 @@ export default function UserMenu() {
                             </button>
 
                             <button
-                                onClick={() => handleNavigation('/profile')}
+                                onClick={() => handleNavigation('/account_info', 'profile')}
                                 className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
                             >
                                 <User className="w-4 h-4" />
                                 <span className="text-sm">Profile Settings</span>
                             </button>
 
-                            <button
-                                onClick={() => handleNavigation('/settings')}
+                            {/* <button
+                                onClick={() => handleNavigation('/account_info', 'security')}
                                 className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
                             >
-                                <Settings className="w-4 h-4" />
-                                <span className="text-sm">Account Settings</span>
+                                <Shield className="w-4 h-4" />
+                                <span className="text-sm">Security Settings</span>
                             </button>
+
+                            <button
+                                onClick={() => handleNavigation('/account_info', 'preferences')}
+                                className="w-full flex items-center gap-3 px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+                            >
+                                <Bell className="w-4 h-4" />
+                                <span className="text-sm">Preferences</span>
+                            </button> */}
 
                             <div className="border-t border-gray-700 my-2"></div>
 

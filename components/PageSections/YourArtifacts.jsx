@@ -11,8 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import EmptyState from "@/components/FunctionComponent/EmptyState";
 import { useAuth } from "@/hooks/use-auth";
-import LoginModal from '@/components/Auth/LoginModal';
-import RegisterModal from '@/components/Auth/RegisterModal';
+import { useRouter } from "next/navigation";
 
 export default function YourArtifacts() {
     // All hooks MUST be called at the top level, unconditionally
@@ -20,10 +19,7 @@ export default function YourArtifacts() {
     const [selectedIds, setSelectedIds] = useState([]);
     const { toast } = useToast();
     const { user, isAuthenticated } = useAuth();
-
-    // Modal state hooks - always called
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const router = useRouter();
 
     // Fetch resumes when component mounts and user is authenticated
     useEffect(() => {
@@ -121,7 +117,22 @@ export default function YourArtifacts() {
         fetchResumes();
     };
 
-    // Render based on authentication state - but hooks are already called above
+    // Navigation handlers for auth
+    const handleLoginClick = () => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname + '#artifacts');
+        }
+        router.push('/login');
+    };
+
+    const handleRegisterClick = () => {
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname + '#artifacts');
+        }
+        router.push('/register');
+    };
+
+    // Render based on authentication state
     return (
         <>
             {!isAuthenticated ? (
@@ -182,8 +193,8 @@ export default function YourArtifacts() {
                             {/* CTA Buttons */}
                             <div className="space-y-4 justify-items-center">
                                 <Button
-                                    onClick={() => setShowLoginModal(true)}
-                                    className="bg-linear-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white font-semibold px-8 py-4 rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 transition-all duration-300 transform hover:scale-105"
+                                    onClick={handleLoginClick}
+                                    className="bg-linear-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600 text-white text-xs sm:text-lg font-semibold px-8 py-4 rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 transition-all duration-300 transform hover:scale-105"
                                 >
                                     <span className="flex items-center justify-center gap-2">
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +207,7 @@ export default function YourArtifacts() {
                                 <p className="text-sm text-gray-300">
                                     Don't have an account?{' '}
                                     <button
-                                        onClick={() => setShowRegisterModal(true)}
+                                        onClick={handleRegisterClick}
                                         className="text-purple-400 hover:text-purple-300 hover:underline transition-colors"
                                     >
                                         Sign up here
@@ -306,24 +317,6 @@ export default function YourArtifacts() {
                     </div>
                 </section>
             )}
-
-            {/* Modals - always rendered */}
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                onSwitchToRegister={() => {
-                    setShowLoginModal(false);
-                    setShowRegisterModal(true);
-                }}
-            />
-            <RegisterModal
-                isOpen={showRegisterModal}
-                onClose={() => setShowRegisterModal(false)}
-                onSwitchToLogin={() => {
-                    setShowRegisterModal(false);
-                    setShowLoginModal(true);
-                }}
-            />
         </>
     );
 }

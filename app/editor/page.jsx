@@ -468,13 +468,13 @@ function EditorContent() {
                                 </Button>
                             </motion.div>
 
-                            <Separator orientation="vertical" className="h-6 bg-white/10" />
+                            <Separator orientation="vertical" className="h-8 bg-white/10" />
 
                             {/* Title Input */}
                             <div className="relative group flex-1 max-w-80">
                                 <div className="absolute -inset-0.5 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-500" />
                                 <div className="relative flex items-center">
-                                    <FileText className="absolute left-3 w-4 h-4 text-purple-400" />
+                                    <FileText className="absolute left-3 w-4 h-4 text-white/50 z-10" />
                                     <input
                                         type="text"
                                         className="w-full pl-10 pr-10 py-2.5 bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white placeholder-gray-400"
@@ -727,13 +727,15 @@ function EditorContent() {
                                 <DownloadPDF
                                     ref={downloadRef}
                                     resumeId={resumeId}
-                                    filename={`${resumeData.full_name || 'resume'}-${resumeData.template || 'modern'}.pdf`}
+                                    filename={`${resumeData.personal?.full_name || 'resume'}-${selectedTemplate}.pdf`}
+                                    template={selectedTemplate}
                                     variant="default"
                                     size="sm"
                                     label="Download PDF"
                                     showIcon={true}
                                     showLabel={true}
-                                    className=" bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
+                                    resumeData={resumeData} // Pass the current resume data
+                                    className="p-4 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
                             </motion.div>
                         </div>
@@ -972,13 +974,15 @@ function EditorContent() {
                                         <DownloadPDF
                                             ref={downloadRef}
                                             resumeId={resumeId}
-                                            filename={`${resumeData.full_name || 'resume'}-${resumeData.template || 'modern'}.pdf`}
+                                            filename={`${resumeData.personal?.full_name || 'resume'}-${selectedTemplate}.pdf`}
+                                            template={selectedTemplate}
                                             variant="default"
-                                            size="default"
+                                            size="sm"
                                             label="PDF"
                                             showIcon={true}
                                             showLabel={true}
-                                            className="flex-1 justify-center bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white"
+                                            resumeData={resumeData} // Pass the current resume data
+                                            className="p-4 flex-1 justify-center bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white"
                                         />
                                     </div>
                                 </div>

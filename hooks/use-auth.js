@@ -1,4 +1,3 @@
-// hooks/use-auth.js
 "use client";
 
 import {

@@ -150,9 +150,15 @@ export function useResumes() {
         // Ensure we're not sending resume_id or id
         const { resume_id, id, ...cleanData } = cleanedData;
 
+        // Ensure email is present and valid
+        if (!cleanData.email || cleanData.email.trim() === "") {
+          throw new Error("Email is required");
+        }
+
         // Add required fields with defaults
         const dataToSend = {
           ...cleanData,
+          user_id: user.id, // Add user_id explicitly
           resume_title: cleanData.resume_title || "Untitled Resume",
           version: 1,
           template: cleanData.template || "modern",
