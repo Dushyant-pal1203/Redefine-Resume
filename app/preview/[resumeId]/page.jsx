@@ -1,25 +1,25 @@
-// app/preview/[resumeId]/page.jsx
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import DownloadPDF from '@/components/FunctionComponent/DownloadPDF';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Download, Share2, Edit, Loader2, Printer } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Download, Share2, Edit, Loader2, Printer, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useTemplates } from '@/hooks/use-templates';
 import Handlebars from 'handlebars';
-import { convertToFlexibleFormat, convertToOldFormat } from '@/lib/resume-schema';
+import { convertToFlexibleFormat } from '@/lib/resume-schema';
 
-// Print styles to properly format the resume for printing
+// Enhanced print styles for better print output
 const printStyles = `
   @media print {
-    /* Hide everything except the resume content */
+    /* Hide all UI elements */
     body * {
       visibility: hidden !important;
     }
     
+    /* Show only the resume content */
     #resume-preview-content, 
     #resume-preview-content * {
       visibility: visible !important;
@@ -31,26 +31,97 @@ const printStyles = `
       top: 0 !important;
       width: 100% !important;
       margin: 0 !important;
-      padding: 1px !important;
+      padding: 0 !important;
       background: white !important;
       box-shadow: none !important;
     }
     
-    /* Hide all UI elements */
-    header, footer, button, .sticky, .fixed, nav,
-    [role="button"], [class*="header"], [class*="footer"] {
-      display: none !important;
+    /* Ensure proper page breaks */
+    .template-content {
+      page-break-inside: avoid;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      page-break-after: avoid;
+    }
+    
+    p, .section {
+      page-break-inside: avoid;
     }
     
     /* Page margins */
     @page {
-      margin: 0.5in;
+      size: letter;
+      margin: 0.5in !important;
     }
     
-    /* Ensure proper box sizing */
-    * {
-      box-sizing: border-box !important;
+    /* Remove background colors for better printing */
+    .bg-gray-50, .bg-gray-100, .bg-blue-50 {
+      background: white !important;
     }
+    
+    /* Ensure text is black for better contrast */
+    .text-gray-600, .text-gray-700, .text-gray-800 {
+      color: black !important;
+    }
+    
+    /* Hide any interactive elements */
+    button, .no-print {
+      display: none !important;
+    }
+  }
+`;
+
+// Print preview modal styles
+const printPreviewStyles = `
+  .print-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  .print-preview-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .print-preview-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+  }
+  
+  .print-preview-body {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    background: #f3f4f6;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .print-preview-scale {
+    transform: scale(0.8);
+    transform-origin: top center;
+    background: white;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -60,14 +131,14 @@ const getTemplateIcon = (templateId) => {
         modern: '✨',
         minimal: '🎯',
         creative: '🎨',
-        professional: '📋'
+        professional: '📋',
+        executive: '👔'
     };
     return icons[templateId] || '📄';
 };
 
-// Register Handlebars helpers
+// Register Handlebars helpers (same as before)
 if (typeof window !== 'undefined') {
-    // Helper for checking if array has items
     Handlebars.registerHelper('hasItems', function (array, options) {
         if (array && Array.isArray(array) && array.length > 0) {
             return options.fn(this);
@@ -75,7 +146,6 @@ if (typeof window !== 'undefined') {
         return options.inverse(this);
     });
 
-    // Helper for checking if it's the last item in array
     Handlebars.registerHelper('ifLast', function (index, array, options) {
         if (index === array.length - 1) {
             return options.fn(this);
@@ -83,7 +153,6 @@ if (typeof window !== 'undefined') {
         return options.inverse(this);
     });
 
-    // Helper for formatting dates
     Handlebars.registerHelper('formatDate', function (date) {
         if (!date) return 'Present';
         try {
@@ -96,7 +165,6 @@ if (typeof window !== 'undefined') {
         }
     });
 
-    // Helper for checking if a value exists
     Handlebars.registerHelper('ifExists', function (value, options) {
         if (value && value.toString().trim() !== '') {
             return options.fn(this);
@@ -104,7 +172,6 @@ if (typeof window !== 'undefined') {
         return options.inverse(this);
     });
 
-    // Helper for joining array items
     Handlebars.registerHelper('join', function (array, separator) {
         if (Array.isArray(array)) {
             return array.join(separator || ', ');
@@ -112,9 +179,12 @@ if (typeof window !== 'undefined') {
         return array || '';
     });
 
-    // Helper for eq comparison
     Handlebars.registerHelper('eq', function (a, b) {
         return a === b;
+    });
+
+    Handlebars.registerHelper('or', function (a, b) {
+        return a || b;
     });
 }
 
@@ -128,9 +198,11 @@ export default function PreviewPage() {
     const [renderKey, setRenderKey] = useState(0);
     const [isContentReady, setIsContentReady] = useState(false);
     const [templateHtml, setTemplateHtml] = useState(null);
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
     const resumeId = params.resumeId;
     const downloadRef = useRef();
     const contentRef = useRef(null);
+    const printPreviewRef = useRef(null);
     const { templates, isLoading: templatesLoading, getTemplateById } = useTemplates();
     const [templateDetails, setTemplateDetails] = useState(null);
     const [templateLoading, setTemplateLoading] = useState(false);
@@ -149,6 +221,23 @@ export default function PreviewPage() {
             }
         };
     }, []);
+
+    // Add print preview styles
+    useEffect(() => {
+        if (showPrintPreview) {
+            const style = document.createElement('style');
+            style.innerHTML = printPreviewStyles;
+            style.id = 'print-preview-styles';
+            document.head.appendChild(style);
+
+            return () => {
+                const existingStyle = document.getElementById('print-preview-styles');
+                if (existingStyle) {
+                    document.head.removeChild(existingStyle);
+                }
+            };
+        }
+    }, [showPrintPreview]);
 
     // Load resume data from localStorage and convert to flexible format
     useEffect(() => {
@@ -249,7 +338,7 @@ export default function PreviewPage() {
         }
     }, [flexibleData, templateHtml]);
 
-    // Print function
+    // Enhanced print function with preview
     const handlePrint = useCallback(() => {
         if (!isContentReady || !contentRef.current) {
             toast({
@@ -260,51 +349,27 @@ export default function PreviewPage() {
         }
 
         try {
-            // Save current body content
-            const originalTitle = document.title;
-            const originalBody = document.body.innerHTML;
+            // Show print preview first
+            setShowPrintPreview(true);
+        } catch (error) {
+            console.error('Print preview error:', error);
+            toast({
+                title: "❌ Print Preview Failed",
+                description: "Failed to open print preview. Please try again.",
+                variant: "destructive",
+            });
+        }
+    }, [isContentReady, toast]);
 
-            // Get the resume content
-            const resumeContent = contentRef.current.outerHTML;
-
-            // Get all styles
-            const styles = Array.from(document.styleSheets)
-                .map(styleSheet => {
-                    try {
-                        const rules = styleSheet.cssRules || styleSheet.rules;
-                        if (rules) {
-                            return Array.from(rules).map(rule => rule.cssText).join('');
-                        }
-                    } catch (e) {
-                        return '';
-                    }
-                    return '';
-                })
-                .join('');
-
-            // Replace body with only resume content
-            const fullName = flexibleData?.personal?.full_name || resumeData?.full_name || 'Resume';
-            document.title = `${fullName} - Print`;
-            document.body.innerHTML = `
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { background: white; padding: 20px; }
-                ${styles}
-            </style>
-            ${resumeContent}
-        `;
-
-            // Trigger print
+    const handleActualPrint = useCallback(() => {
+        try {
             window.print();
+            setShowPrintPreview(false);
 
-            // Restore original content after print dialog closes
-            setTimeout(() => {
-                document.title = originalTitle;
-                document.body.innerHTML = originalBody;
-                // Re-initialize your app state if needed
-                window.location.reload();
-            }, 1000);
-
+            toast({
+                title: "✅ Print Initiated",
+                description: "Print dialog opened successfully",
+            });
         } catch (error) {
             console.error('Print error:', error);
             toast({
@@ -313,33 +378,57 @@ export default function PreviewPage() {
                 variant: "destructive",
             });
         }
-    }, [isContentReady, flexibleData, resumeData]);
+    }, [toast]);
 
     const prepareDataForTemplate = () => {
         if (!flexibleData) return null;
 
         // Prepare data in the format expected by templates
-        // This flattens the structure for backward compatibility with existing templates
         const personal = flexibleData.personal || {};
         const summary = flexibleData.summary || {};
         const skills = flexibleData.skills || {};
 
+        // Get display names
+        const portfolioDisplay = personal.portfolio_display || '';
+        const linkedinDisplay = personal.linkedin_display || '';
+        const githubDisplay = personal.github_display || '';
+
+        // Get URLs
+        const portfolioUrl = personal.portfolio_url || personal.portfolio || '';
+        const linkedinUrl = personal.linkedin_url || personal.linkedin || '';
+        const githubUrl = personal.github_url || personal.github || '';
+
+        // Clean URLs
+        const cleanPortfolioUrl = portfolioUrl ? (portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`) : '';
+        const cleanLinkedinUrl = linkedinUrl ? (linkedinUrl.startsWith('http') ? linkedinUrl : `https://${linkedinUrl}`) : '';
+        const cleanGithubUrl = githubUrl ? (githubUrl.startsWith('http') ? githubUrl : `https://${githubUrl}`) : '';
+
         return {
             // Personal Information
             full_name: personal.full_name || '',
+            name: personal.full_name || '',
             job_title: personal.job_title || '',
+            title: personal.job_title || '',
             headline: personal.headline || '',
             email: personal.email || '',
             phone: personal.phone || '',
             location: personal.location || '',
 
             // Social Links
-            portfolio: personal.portfolio_url || '',
-            portfolio_display: personal.portfolio_display || '',
-            linkedin: personal.linkedin_url || '',
-            linkedin_display: personal.linkedin_display || '',
-            github: personal.github_url || '',
-            github_display: personal.github_display || '',
+            portfolio_display: portfolioDisplay,
+            portfolio_url: cleanPortfolioUrl,
+
+            linkedin_display: linkedinDisplay,
+            linkedin_url: cleanLinkedinUrl,
+
+            github_display: githubDisplay,
+            github_url: cleanGithubUrl,
+
+            // Legacy fields for backward compatibility
+            portfolio: cleanPortfolioUrl,
+            linkedin: cleanLinkedinUrl,
+            github: cleanGithubUrl,
+            website: cleanPortfolioUrl,
 
             // Professional Summary
             professional_summary: summary.summary || '',
@@ -348,34 +437,53 @@ export default function PreviewPage() {
             // Experience
             experience: Array.isArray(flexibleData.experience)
                 ? flexibleData.experience.map(exp => ({
-                    ...exp,
-                    position: exp.title, // For backward compatibility
-                    startDate: exp.start_date,
-                    endDate: exp.end_date
+                    title: exp.title || exp.position || '',
+                    company: exp.company || '',
+                    location: exp.location || '',
+                    start_date: exp.start_date || exp.startDate || '',
+                    end_date: exp.end_date || exp.endDate || '',
+                    current: exp.current || false,
+                    description: exp.description || '',
+                    achievements: exp.achievements || [],
+                    position: exp.title || exp.position || ''
                 }))
                 : [],
 
             // Education
             education: Array.isArray(flexibleData.education)
                 ? flexibleData.education.map(edu => ({
-                    ...edu,
-                    school: edu.institution, // For backward compatibility
-                    startDate: edu.start_date,
-                    endDate: edu.end_date
+                    degree: edu.degree || '',
+                    institution: edu.institution || edu.school || '',
+                    location: edu.location || '',
+                    start_date: edu.start_date || edu.startDate || '',
+                    end_date: edu.end_date || edu.endDate || '',
+                    current: edu.current || false,
+                    grade: edu.grade || '',
+                    description: edu.description || '',
+                    school: edu.institution || edu.school || ''
                 }))
                 : [],
 
             // Skills
-            skills: [
-                ...(skills.technical || []),
-                ...(skills.soft || [])
-            ],
-            technical_skills: skills.technical || [],
-            soft_skills: skills.soft || [],
+            skills: {
+                technical: Array.isArray(skills.technical) ? skills.technical : [],
+                soft: Array.isArray(skills.soft) ? skills.soft : [],
+                languages: Array.isArray(skills.languages) ? skills.languages : []
+            },
+            technical_skills: Array.isArray(skills.technical) ? skills.technical : [],
+            soft_skills: Array.isArray(skills.soft) ? skills.soft : [],
 
             // Projects
             projects: Array.isArray(flexibleData.projects)
-                ? flexibleData.projects
+                ? flexibleData.projects.map(proj => ({
+                    name: proj.name || '',
+                    description: proj.description || '',
+                    technologies: proj.technologies || [],
+                    url: proj.url || '',
+                    start_date: proj.start_date || '',
+                    end_date: proj.end_date || '',
+                    highlights: proj.highlights || []
+                }))
                 : [],
 
             // Other sections
@@ -385,7 +493,7 @@ export default function PreviewPage() {
 
             languages: Array.isArray(flexibleData.languages)
                 ? flexibleData.languages
-                : skills.languages || [],
+                : (Array.isArray(skills.languages) ? skills.languages.map(l => ({ language: l, proficiency: 'Professional' })) : []),
 
             publications: Array.isArray(flexibleData.publications)
                 ? flexibleData.publications
@@ -401,7 +509,19 @@ export default function PreviewPage() {
 
             interests: Array.isArray(flexibleData.interests)
                 ? flexibleData.interests
-                : []
+                : [],
+
+            // Template settings
+            template: resumeData?.template || 'modern',
+            theme_color: resumeData?.theme_color || '#2563eb',
+            font_family: resumeData?.font_family || 'Inter',
+
+            // Metadata
+            generatedAt: new Date().toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            })
         };
     };
 
@@ -428,7 +548,7 @@ export default function PreviewPage() {
         } catch (error) {
             console.error('Template rendering error:', error);
             return (
-                <div className="text-center text-red-600 p-1">
+                <div className="text-center text-red-600">
                     <h3 className="text-xl font-bold mb-4">Error Rendering Template</h3>
                     <p className="text-sm">{error.message}</p>
                     <pre className="mt-4 text-xs text-left bg-red-50 p-4 rounded overflow-auto max-h-96">
@@ -448,11 +568,7 @@ export default function PreviewPage() {
     };
 
     const handleEdit = () => {
-        // Navigate to editor with data
-        // Use the original resumeData for editing to maintain compatibility
-        const encodedData = encodeURIComponent(JSON.stringify(resumeData));
-        const templateId = resumeData?.template || 'modern';
-        router.push(`/editor?resumeId=${resumeId}&data=${encodedData}&template=${templateId}`);
+        router.push(`/editor?resumeId=${resumeId}`);
     };
 
     if (loading || templatesLoading) {
@@ -482,7 +598,7 @@ export default function PreviewPage() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-center max-w-2xl p-1"
+                    className="text-center max-w-2xl"
                 >
                     <h1 className="text-4xl text-white font-bold mb-4">Resume Not Found</h1>
                     <p className="text-gray-400 mb-8 text-lg">
@@ -582,26 +698,95 @@ export default function PreviewPage() {
                                 </Button>
                             </motion.div>
 
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <DownloadPDF
                                     ref={downloadRef}
                                     resumeId={resumeId}
                                     filename={`${personal.full_name || 'resume'}-${templateId}.pdf`}
+                                    template={templateId}
                                     variant="default"
-                                    size="default"
-                                    label="Download PDF"
+                                    size="sm"
+                                    label="PDF"
                                     showIcon={true}
                                     showLabel={true}
-                                    className="p-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
+                                    resumeData={flexibleData}
+                                    className="bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
                             </motion.div>
                         </div>
                     </div>
                 </div>
             </header>
+
+            {/* Print Preview Modal */}
+            <AnimatePresence>
+                {showPrintPreview && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="print-preview-modal fixed inset-0 bg-black/75 z-9999 flex items-center justify-center p-4"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setShowPrintPreview(false);
+                            }
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col"
+                        >
+                            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <Printer className="w-5 h-5 text-gray-600" />
+                                    <h2 className="text-lg font-semibold text-gray-800">Print Preview</h2>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowPrintPreview(false)}
+                                        className="text-gray-600"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        onClick={handleActualPrint}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        <Printer className="w-4 h-4 mr-2" />
+                                        Print
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="flex-1 overflow-auto p-6 bg-gray-100">
+                                <div className="flex justify-center">
+                                    <div
+                                        ref={printPreviewRef}
+                                        className="shadow-xl transform scale-[0.8] origin-top"
+                                        style={{
+                                            width: '816px',
+                                            backgroundColor: 'white',
+                                        }}
+                                    >
+                                        {isContentReady && templateHtml && (
+                                            <div className="p-1">
+                                                {renderTemplate()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="px-6 py-3 border-t border-gray-200 bg-gray-50 text-sm text-gray-600">
+                                <p>💡 Tip: Use the print dialog to adjust page settings like margins and paper size.</p>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Resume Content */}
             <div className="container mx-auto px-4 py-8">
@@ -688,7 +873,7 @@ export default function PreviewPage() {
                             onClick={handlePrint}
                             className="bg-white/5 hover:bg-white/10 text-white border-white/10"
                         >
-                            <Printer className="w-4 h-4 mr-2" />
+                            <Eye className="w-4 h-4 mr-2" />
                             Print Preview
                         </Button>
                     </div>

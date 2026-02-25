@@ -5,17 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
-import LoginModal from '@/components/Auth/LoginModal';
-import RegisterModal from '@/components/Auth/RegisterModal';
+import { Button } from "@/components/ui/button";
 import UserMenu from '@/components/Auth/UserMenu';
+import { useRouter } from 'next/navigation';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [showLogin, setShowLogin] = useState(false);
-    const [showRegister, setShowRegister] = useState(false);
-
     const { isAuthenticated, isLoading } = useAuth();
+    const router = useRouter();
 
     // Handle scroll effect
     useEffect(() => {
@@ -53,6 +51,22 @@ export default function Navbar() {
         { href: '#features', label: 'Features' },
         { href: '#artifacts', label: 'Artifacts' },
     ];
+
+    const handleLoginClick = () => {
+        // Store the current path to redirect back after login
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        }
+        router.push('/login');
+    };
+
+    const handleRegisterClick = () => {
+        // Store the current path to redirect back after registration
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+        }
+        router.push('/register');
+    };
 
     return (
         <>
@@ -100,20 +114,23 @@ export default function Navbar() {
                                 <UserMenu />
                             ) : (
                                 <div className="flex items-center space-x-3">
-                                    <button
-                                        onClick={() => setShowLogin(true)}
-                                        className="px-4 py-2 text-gray-300 hover:text-white transition-colors duration-200 font-medium flex items-center gap-2"
+                                    <Button
+                                        onClick={handleLoginClick}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="px-5 py-2.5 text-gray-300 hover:text-white transition-colors duration-200 font-medium flex items-center gap-2 hover:shadow-xl hover:scale-105 active:scale-95"
                                     >
                                         <LogIn className="w-4 h-4" />
                                         Login
-                                    </button>
-                                    <button
-                                        onClick={() => setShowRegister(true)}
+                                    </Button>
+                                    <Button
+                                        onClick={handleRegisterClick}
+                                        size="sm"
                                         className="px-5 py-2.5 bg-linear-to-r from-purple-600 to-cyan-500 rounded-lg hover:opacity-90 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2"
                                     >
                                         <UserPlus className="w-4 h-4" />
                                         Sign Up
-                                    </button>
+                                    </Button>
                                 </div>
                             )}
                         </div>
@@ -162,7 +179,7 @@ export default function Navbar() {
                                 transition={{ duration: 0.3 }}
                                 className="md:hidden mobile-menu overflow-hidden"
                             >
-                                <div className="py-4 space-y-2 border-t border-gray-800 ">
+                                <div className="py-4 space-y-2 border-t border-gray-800">
                                     {navLinks.map((link) => (
                                         <Link
                                             key={link.href}
@@ -184,26 +201,26 @@ export default function Navbar() {
                                         </div>
                                     ) : (
                                         <>
-                                            <button
+                                            <Button
                                                 onClick={() => {
-                                                    setShowLogin(true);
+                                                    handleLoginClick();
                                                     setIsMenuOpen(false);
                                                 }}
                                                 className="w-full px-4 py-3 text-left text-gray-300 hover:text-cyan-300 hover:bg-gray-800/50 rounded-lg transition-all duration-200 flex items-center gap-2"
                                             >
                                                 <LogIn className="w-4 h-4" />
                                                 Login
-                                            </button>
-                                            <button
+                                            </Button>
+                                            <Button
                                                 onClick={() => {
-                                                    setShowRegister(true);
+                                                    handleRegisterClick();
                                                     setIsMenuOpen(false);
                                                 }}
                                                 className="w-full px-4 py-3 text-left text-white bg-linear-to-r from-purple-600 to-cyan-500 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 flex items-center gap-2"
                                             >
                                                 <UserPlus className="w-4 h-4" />
                                                 Sign Up
-                                            </button>
+                                            </Button>
                                         </>
                                     )}
                                 </div>
@@ -212,25 +229,6 @@ export default function Navbar() {
                     </AnimatePresence>
                 </div>
             </nav>
-
-            {/* Auth Modals */}
-            <LoginModal
-                isOpen={showLogin}
-                onClose={() => setShowLogin(false)}
-                onSwitchToRegister={() => {
-                    setShowLogin(false);
-                    setShowRegister(true);
-                }}
-            />
-
-            <RegisterModal
-                isOpen={showRegister}
-                onClose={() => setShowRegister(false)}
-                onSwitchToLogin={() => {
-                    setShowRegister(false);
-                    setShowLogin(true);
-                }}
-            />
 
             {/* Spacer to prevent content from hiding under fixed navbar */}
             <div className="h-16 md:h-20"></div>

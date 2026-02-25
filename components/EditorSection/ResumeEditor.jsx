@@ -313,8 +313,8 @@ const DateRangePicker = ({ startDate, endDate, current, onChange }) => {
     );
 };
 
-// Section Component
-function Section({ title, icon: Icon, children, expanded, onToggle }) {
+// Section Component - FIXED: Now handles single section expansion correctly
+function Section({ title, icon: Icon, children, expanded, onToggle, isLast = false }) {
     return (
         <motion.div
             layout
@@ -335,13 +335,14 @@ function Section({ title, icon: Icon, children, expanded, onToggle }) {
                 )}
             </button>
 
-            <AnimatePresence>
+            <AnimatePresence initial={false}>
                 {expanded && (
                     <motion.div
+                        key="content"
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.2 }}
                         className="border-t border-gray-700/50"
                     >
                         <div className="p-4">
@@ -510,13 +511,14 @@ export default function ResumeEditor({
         }
     }, [formData, onUpdate]);
 
+    // FIXED: Only one section expands at a time
     const [expandedSections, setExpandedSections] = useState({
         personal: true,
-        summary: true,
-        experience: true,
-        education: true,
-        skills: true,
-        projects: true,
+        summary: false,
+        experience: false,
+        education: false,
+        skills: false,
+        projects: false,
         certifications: false,
         languages: false,
         publications: false,
@@ -764,7 +766,7 @@ export default function ResumeEditor({
         }
     }, [uploadResume, user, onPDFUpload, toast]);
 
-    // In ResumeEditor.jsx - Update the handleSave function
+    // components/EditorSection/ResumeEditor.jsx - Focus on the handleSave function
 
     const handleSave = async () => {
         // Validate before saving
@@ -842,7 +844,7 @@ export default function ResumeEditor({
             const { resume_id, id, ...cleanData } = oldFormatData;
 
             // Ensure all URL fields are either valid URLs or empty strings
-            const urlFields = ['portfolio_url', 'linkedin_url', 'github_url',];
+            const urlFields = ['portfolio_url', 'linkedin_url', 'github_url'];
             urlFields.forEach(field => {
                 if (cleanData[field] && typeof cleanData[field] === 'string') {
                     try {
@@ -854,13 +856,23 @@ export default function ResumeEditor({
                 }
             });
 
+            // Make sure email is included and valid
+            if (!cleanData.email || cleanData.email.trim() === '') {
+                toast({
+                    title: "❌ Validation Failed",
+                    description: "Email is required",
+                    variant: "destructive",
+                });
+                return;
+            }
+
             const resumeToSave = {
                 ...cleanData,
                 resume_title: cleanData.resume_title || `${cleanData.full_name || 'Untitled'}'s Resume`,
                 template: template || 'modern',
             };
 
-            console.log('Saving resume with cleaned URLs:', resumeToSave);
+            console.log('Saving resume with data:', resumeToSave);
 
             // Call your API to save
             const result = await createResume(resumeToSave);
@@ -887,11 +899,26 @@ export default function ResumeEditor({
         }
     };
 
+    // FIXED: Only one section expands at a time
     const toggleSection = useCallback((section) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [section]: !prev[section]
-        }));
+        setExpandedSections(prev => {
+            // If clicking on already expanded section, collapse it
+            if (prev[section]) {
+                return {
+                    ...prev,
+                    [section]: false
+                };
+            }
+
+            // Otherwise, collapse all and expand only the clicked section
+            const newState = {};
+            Object.keys(prev).forEach(key => {
+                newState[key] = false;
+            });
+            newState[section] = true;
+
+            return newState;
+        });
     }, []);
 
     // Input classes based on layout
@@ -1005,8 +1032,8 @@ export default function ResumeEditor({
                     <Section
                         title="Upload Resume"
                         icon={FileUp}
-                        expanded={true}
-                        onToggle={() => { }}
+                        expanded={expandedSections.upload}
+                        onToggle={() => toggleSection('upload')}
                     >
                         <div className="space-y-4">
                             <div className="relative">
@@ -1036,8 +1063,8 @@ export default function ResumeEditor({
                             </div>
 
                             {!isAuthenticated && (
-                                <div className="flex items-start gap-2 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
-                                    <AlertCircle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                                <div className="flex items-center justify-center gap-2 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+                                    <AlertCircle className="w-4 h-4 text-yellow-400 shrink-0 " />
                                     <p className="text-xs text-yellow-400">
                                         Please log in to upload resumes.
                                     </p>
@@ -1152,7 +1179,7 @@ export default function ResumeEditor({
                                 </div>
                             </div>
 
-                            {/* Display Name Fields */}
+                            {/* Display Name Fields*/}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block mb-2 text-sm font-medium text-gray-300">Portfolio Display Name</label>
@@ -1166,6 +1193,7 @@ export default function ResumeEditor({
                                             placeholder="My Portfolio"
                                         />
                                     </div>
+                                    <p className="text-xs text-gray-500 mt-1">This text will appear in the PDF</p>
                                 </div>
 
                                 <div>
@@ -1177,9 +1205,10 @@ export default function ResumeEditor({
                                             value={formData.personal?.linkedin_display || ''}
                                             onChange={(e) => handleChange('personal', 'linkedin_display', e.target.value)}
                                             className={`${inputClasses} pl-10`}
-                                            placeholder="John Doe"
+                                            placeholder="LinkedIn Profile"
                                         />
                                     </div>
+                                    <p className="text-xs text-gray-500 mt-1">This text will appear in the PDF</p>
                                 </div>
 
                                 <div>
@@ -1191,9 +1220,10 @@ export default function ResumeEditor({
                                             value={formData.personal?.github_display || ''}
                                             onChange={(e) => handleChange('personal', 'github_display', e.target.value)}
                                             className={`${inputClasses} pl-10`}
-                                            placeholder="johndoe"
+                                            placeholder="GitHub Profile"
                                         />
                                     </div>
+                                    <p className="text-xs text-gray-500 mt-1">This text will appear in the PDF</p>
                                 </div>
                             </div>
 
@@ -1212,32 +1242,18 @@ export default function ResumeEditor({
                                             onBlur={(e) => {
                                                 let value = e.target.value;
                                                 if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
-                                                    // Auto-add https://
                                                     handleChange('personal', 'portfolio_url', `https://${value}`);
                                                 }
                                             }}
-                                            className={`${inputClasses} pl-10 ${formData.personal?.portfolio_url &&
-                                                !isValidUrl(formData.personal?.portfolio_url) ? 'border-yellow-500' : ''
-                                                }`}
-                                            placeholder="https://johndoe.com"
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="https://example.com"
                                         />
-                                        {formData.personal?.portfolio_url && !isValidUrl(formData.personal?.portfolio_url) && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                <AlertCircle className="w-4 h-4 text-yellow-500" />
-                                            </div>
-                                        )}
                                     </div>
-                                    {formData.personal?.portfolio_url && !isValidUrl(formData.personal?.portfolio_url) && (
-                                        <p className="mt-1 text-xs text-yellow-500">
-                                            Please enter a valid URL (e.g., https://example.com)
-                                        </p>
-                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">The link that opens when clicked</p>
                                 </div>
 
                                 <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-300">
-                                        LinkedIn URL
-                                    </label>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">LinkedIn URL</label>
                                     <div className="relative">
                                         <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                         <input
@@ -1248,41 +1264,19 @@ export default function ResumeEditor({
                                             }}
                                             onBlur={(e) => {
                                                 let value = e.target.value;
-                                                if (
-                                                    value &&
-                                                    !value.startsWith('http://') &&
-                                                    !value.startsWith('https://')
-                                                ) {
+                                                if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
                                                     handleChange('personal', 'linkedin_url', `https://${value}`);
                                                 }
                                             }}
-                                            className={`${inputClasses} pl-10 ${formData.personal?.linkedin_url &&
-                                                !isValidUrl(formData.personal?.linkedin_url)
-                                                ? 'border-yellow-500'
-                                                : ''
-                                                }`}
-                                            placeholder="https://linkedin.com/in/johndoe"
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="https://linkedin.com/in/username"
                                         />
-                                        {formData.personal?.linkedin_url &&
-                                            !isValidUrl(formData.personal?.linkedin_url) && (
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                                                </div>
-                                            )}
                                     </div>
-
-                                    {formData.personal?.linkedin_url &&
-                                        !isValidUrl(formData.personal?.linkedin_url) && (
-                                            <p className="mt-1 text-xs text-yellow-500">
-                                                Please enter a valid URL (e.g., https://linkedin.com/in/username)
-                                            </p>
-                                        )}
+                                    <p className="text-xs text-gray-500 mt-1">The link that opens when clicked</p>
                                 </div>
 
                                 <div>
-                                    <label className="block mb-2 text-sm font-medium text-gray-300">
-                                        GitHub URL
-                                    </label>
+                                    <label className="block mb-2 text-sm font-medium text-gray-300">GitHub URL</label>
                                     <div className="relative">
                                         <Github className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                                         <input
@@ -1293,44 +1287,16 @@ export default function ResumeEditor({
                                             }}
                                             onBlur={(e) => {
                                                 let value = e.target.value;
-                                                if (
-                                                    value &&
-                                                    !value.startsWith('http://') &&
-                                                    !value.startsWith('https://')
-                                                ) {
+                                                if (value && !value.startsWith('http://') && !value.startsWith('https://')) {
                                                     handleChange('personal', 'github_url', `https://${value}`);
                                                 }
                                             }}
-                                            className={`${inputClasses} pl-10 ${formData.personal?.github_url &&
-                                                !isValidUrl(formData.personal?.github_url)
-                                                ? 'border-yellow-500'
-                                                : ''
-                                                }`}
-                                            placeholder="https://github.com/johndoe"
+                                            className={`${inputClasses} pl-10`}
+                                            placeholder="https://github.com/username"
                                         />
-                                        {formData.personal?.github_url &&
-                                            !isValidUrl(formData.personal?.github_url) && (
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                    <AlertCircle className="w-4 h-4 text-yellow-500" />
-                                                </div>
-                                            )}
                                     </div>
-
-                                    {formData.personal?.github_url &&
-                                        !isValidUrl(formData.personal?.github_url) && (
-                                            <p className="mt-1 text-xs text-yellow-500">
-                                                Please enter a valid URL (e.g., https://github.com/username)
-                                            </p>
-                                        )}
+                                    <p className="text-xs text-gray-500 mt-1">The link that opens when clicked</p>
                                 </div>
-                            </div>
-
-                            {/* Help text */}
-                            <div className="flex items-start gap-2 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg">
-                                <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                                <p className="text-xs text-blue-400">
-                                    URLs will automatically get https:// if you forget to add it. Make sure to include the full URL for proper linking.
-                                </p>
                             </div>
                         </div>
                     </Section>
