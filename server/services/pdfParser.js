@@ -20,39 +20,11 @@ async function parsePDF(buffer) {
         try {
           console.log("📊 PDF parsed successfully");
 
-          // Extract text from all pages
-          let fullText = "";
-          const lines = [];
+          // Extract and aggressively clean the text
+          const extractedData = extractAndCleanText(pdfData);
 
-          if (pdfData.Pages && pdfData.Pages.length > 0) {
-            pdfData.Pages.forEach((page, pageIndex) => {
-              if (page.Texts && page.Texts.length > 0) {
-                page.Texts.forEach((text) => {
-                  try {
-                    const decoded = decodeURIComponent(text.R[0].T || "");
-                    fullText += decoded + " ";
-
-                    // Split into lines based on y-position (simplified)
-                    if (decoded.trim()) {
-                      lines.push(decoded.trim());
-                    }
-                  } catch (e) {
-                    // Skip problematic text
-                  }
-                });
-              }
-            });
-          }
-
-          console.log(
-            `📝 Extracted ${lines.length} lines, total text length: ${fullText.length}`,
-          );
-
-          // Clean up text
-          fullText = fullText.replace(/\s+/g, " ").trim();
-
-          // Parse the extracted text
-          const result = parseResumeData(fullText, lines);
+          // Parse the cleaned data
+          const result = parseResumeData(extractedData);
 
           console.log("✅ PDF parsing completed successfully");
           resolve(result);
@@ -70,94 +42,288 @@ async function parsePDF(buffer) {
   });
 }
 
-function parseResumeData(text, lines) {
-  // Initialize result object
-  const result = {
-    full_name: extractName(lines),
-    email: extractEmail(text),
-    phone: extractPhone(text),
-    location: extractLocation(lines),
-    professional_summary: extractSummary(lines),
-    experience: extractExperience(lines),
-    education: extractEducation(lines),
-    skills: extractSkills(lines),
-    projects: extractProjects(lines),
-    certifications: extractCertifications(lines),
-    languages: extractLanguages(lines),
-  };
+function extractAndCleanText(pdfData) {
+  let fullText = "";
+  const lines = [];
+  const rawTexts = [];
 
-  // Clean up empty arrays
-  Object.keys(result).forEach((key) => {
-    if (Array.isArray(result[key]) && result[key].length === 0) {
-      delete result[key];
+  if (pdfData.Pages && pdfData.Pages.length > 0) {
+    pdfData.Pages.forEach((page) => {
+      if (page.Texts && page.Texts.length > 0) {
+        // Sort by y-position to maintain reading order
+        const sortedTexts = [...page.Texts].sort((a, b) => {
+          const y1 = a.y || 0;
+          const y2 = b.y || 0;
+          return y1 - y2;
+        });
+
+        sortedTexts.forEach((text) => {
+          try {
+            const decoded = decodeURIComponent(text.R[0].T || "");
+            if (decoded.trim()) {
+              rawTexts.push(decoded);
+              fullText += decoded + " ";
+            }
+          } catch (e) {
+            // Skip problematic text
+          }
+        });
+      }
+    });
+  }
+
+  // Join all raw text
+  const rawJoined = rawTexts.join(" ");
+
+  // AGGRESSIVE CLEANING
+
+  // Step 1: Fix spaced out letters (like "D U S H Y A N T" -> "DUSHYANT")
+  let cleaned = rawJoined.replace(/([A-Z])\s+(?=[A-Z])/g, "$1");
+  cleaned = cleaned.replace(/([a-z])\s+(?=[a-z])/g, "$1");
+
+  // Step 2: Fix spaced out numbers (like "9 7 1 6" -> "9716")
+  cleaned = cleaned.replace(/(\d)\s+(\d)/g, "$1$2");
+
+  // Step 3: Fix email addresses (like "ADITYA . PAL 32742 @ GMAIL . COM" -> "ADITYA.PAL32742@GMAIL.COM")
+  cleaned = cleaned.replace(/([A-Z0-9])\s+\.\s+([A-Z0-9])/g, "$1.$2");
+  cleaned = cleaned.replace(/([a-zA-Z0-9])\s+@\s+([a-zA-Z])/g, "$1@$2");
+  cleaned = cleaned.replace(/@\s+([a-zA-Z])/g, "@$1");
+  cleaned = cleaned.replace(/([a-zA-Z])\s+\.\s+([a-zA-Z])/g, "$1.$2");
+
+  // Step 4: Fix URLs
+  cleaned = cleaned.replace(/https?\s*:\s*\/\s*\/\s*/g, "https://");
+  cleaned = cleaned.replace(/\/\s+/g, "/");
+
+  // Step 5: Fix common patterns in your specific PDF
+  cleaned = cleaned.replace(/F ull S tack/g, "Full Stack");
+  cleaned = cleaned.replace(/W eb/g, "Web");
+  cleaned = cleaned.replace(/D eveloper/g, "Developer");
+  cleaned = cleaned.replace(/P rofessional/g, "Professional");
+  cleaned = cleaned.replace(/S ummary/g, "Summary");
+  cleaned = cleaned.replace(/P ortfolio/g, "Portfolio");
+  cleaned = cleaned.replace(/I ndia/g, "India");
+  cleaned = cleaned.replace(/D elhi/g, "Delhi");
+
+  // Step 6: Remove multiple spaces
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  // Step 7: Split into lines based on common sentence endings
+  const lineBreaks = cleaned.split(/(?<=[.!?])\s+(?=[A-Z])/);
+
+  lineBreaks.forEach((line) => {
+    if (line.trim()) {
+      lines.push(line.trim());
     }
   });
 
-  return result;
+  return {
+    fullText: cleaned,
+    lines: lines,
+    rawTexts: rawTexts,
+  };
 }
 
-function extractName(lines) {
-  // Usually the first non-empty line that's not an email or phone
-  for (let i = 0; i < Math.min(10, lines.length); i++) {
-    const line = lines[i].trim();
-    if (
-      line &&
-      !line.includes("@") &&
-      !/\d{10,}/.test(line) &&
-      line.length > 2 &&
-      line.length < 50
-    ) {
-      // Clean up common artifacts
-      return line.replace(/[#*_]/g, "").trim();
-    }
-  }
-  return "";
+function parseResumeData(extractedData) {
+  const { fullText, lines } = extractedData;
+
+  // Log for debugging
+  console.log("Cleaned fullText:", fullText.substring(0, 200) + "...");
+  console.log("First 10 lines:", lines.slice(0, 10));
+
+  // Extract all fields with specific patterns
+  const fullName = extractName(fullText, lines);
+  const email = extractEmail(fullText);
+  const phone = extractPhone(fullText);
+  const location = extractLocation(fullText, lines);
+  const jobTitle = extractJobTitle(fullText, lines);
+  const summary = extractSummary(fullText, lines);
+  const skills = extractSkills(fullText, lines);
+  const experience = extractExperience(fullText, lines);
+  const education = extractEducation(fullText, lines);
+  const projects = extractProjects(fullText, lines);
+  const certifications = extractCertifications(fullText, lines);
+  const languages = extractLanguages(fullText, lines);
+  const portfolioUrl = extractPortfolioUrl(fullText);
+  const linkedinUrl = extractLinkedInUrl(fullText);
+  const githubUrl = extractGitHubUrl(fullText);
+
+  console.log("Extracted:", { fullName, email, phone, location, jobTitle });
+
+  return {
+    full_name: fullName,
+    job_title: jobTitle,
+    headline: jobTitle, // Use job title as headline
+    email: email,
+    phone: phone,
+    location: location,
+    professional_summary: summary,
+    portfolio_url: portfolioUrl,
+    linkedin_url: linkedinUrl,
+    github_url: githubUrl,
+    twitter_url: "",
+    links: [],
+    experience: experience,
+    education: education,
+    projects: projects,
+    skills: skills,
+    certifications: certifications,
+    achievements: [],
+    languages: languages,
+    keywords: [],
+    parsed_sections: {},
+    years_of_experience: calculateYearsOfExperience(experience),
+    template: "modern",
+    theme_color: "#2563eb",
+    font_family: "Inter",
+    layout: "single-column",
+    is_public: false,
+    version: 1,
+    lastGenerated: null,
+    pdfUrl: null,
+    portfolio_display: fullName
+      ? `${fullName.split(" ")[0]}'s Portfolio`
+      : "Portfolio",
+    linkedin_display: linkedinUrl ? "LinkedIn" : null,
+    github_display: githubUrl ? "GitHub" : null,
+  };
 }
 
-function extractEmail(text) {
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const matches = text.match(emailRegex);
-  return matches && matches.length > 0 ? matches[0].toLowerCase() : "";
-}
-
-function extractPhone(text) {
-  // Match various phone formats
-  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
-  const matches = text.match(phoneRegex);
-  return matches && matches.length > 0 ? matches[0].replace(/[-.\s]/g, "") : "";
-}
-
-function extractLocation(lines) {
-  const locationKeywords = [
-    "city",
-    "state",
-    "country",
-    "india",
-    "delhi",
-    "mumbai",
-    "bangalore",
+function extractName(fullText, lines) {
+  // Look for patterns like "DUSHYANT PAL" (all caps, two words)
+  const namePatterns = [
+    /^([A-Z][A-Z\s]+[A-Z])(?:\s|$)/m, // All caps name
+    /([A-Z][a-z]+ [A-Z][a-z]+)/, // Proper case
+    /([A-Z][a-z]+ [A-Z]\. [A-Z][a-z]+)/, // With middle initial
   ];
 
-  for (let i = 0; i < Math.min(20, lines.length); i++) {
-    const line = lines[i].toLowerCase();
-    if (locationKeywords.some((keyword) => line.includes(keyword))) {
-      return lines[i].trim();
+  for (const pattern of namePatterns) {
+    const match = fullText.match(pattern);
+    if (match) {
+      const name = match[1].trim();
+      if (name.length > 3 && name.length < 40 && !name.includes("@")) {
+        return name;
+      }
     }
   }
+
+  // Try first line if it looks like a name
+  if (lines.length > 0) {
+    const firstLine = lines[0].trim();
+    if (
+      firstLine.length > 3 &&
+      firstLine.length < 40 &&
+      !firstLine.includes("@") &&
+      !firstLine.includes("http") &&
+      firstLine.split(" ").length <= 3
+    ) {
+      return firstLine;
+    }
+  }
+
   return "";
 }
 
-function extractSummary(lines) {
-  let summary = [];
+function extractEmail(fullText) {
+  // Clean the text first - remove spaces around @ and .
+  const cleanedForEmail = fullText
+    .replace(/\s+@\s+/g, "@")
+    .replace(/\s+\.\s+/g, ".")
+    .replace(/([a-zA-Z0-9])\s+([a-zA-Z0-9])/g, "$1$2");
+
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const matches = cleanedForEmail.match(emailRegex);
+
+  if (matches && matches.length > 0) {
+    return matches[0].toLowerCase();
+  }
+
+  return "";
+}
+
+function extractPhone(fullText) {
+  // Remove all spaces from text first
+  const noSpaces = fullText.replace(/\s+/g, "");
+
+  // Look for 10-digit number
+  const phoneRegex = /(\+?\d{1,3})?(\d{10})/;
+  const match = noSpaces.match(phoneRegex);
+
+  if (match) {
+    // Return the 10-digit part
+    return match[2];
+  }
+
+  // Try with original text
+  const originalPhoneRegex =
+    /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  const originalMatch = fullText.match(originalPhoneRegex);
+
+  if (originalMatch) {
+    return originalMatch[0].replace(/[-.\s]/g, "");
+  }
+
+  return "";
+}
+
+function extractLocation(fullText, lines) {
+  // Look for "DELHI, INDIA" pattern
+  const locationPattern = /([A-Z\s]+,\s*[A-Z\s]+)/;
+  const match = fullText.match(locationPattern);
+
+  if (match) {
+    return match[1].trim();
+  }
+
+  // Look for city names
+  const cities = [
+    "DELHI",
+    "MUMBAI",
+    "BANGALORE",
+    "INDIA",
+    "NEW YORK",
+    "LONDON",
+  ];
+  for (const city of cities) {
+    if (fullText.includes(city)) {
+      // Find the full location text
+      const locationRegex = new RegExp(`([A-Z\\s,]+${city}[A-Z\\s,]*)`);
+      const cityMatch = fullText.match(locationRegex);
+      if (cityMatch) {
+        return cityMatch[1].trim();
+      }
+    }
+  }
+
+  return "";
+}
+
+function extractJobTitle(fullText, lines) {
+  const titlePatterns = [
+    /(Full Stack Web Developer|Frontend Developer|Backend Developer|Software Engineer|Web Developer)/i,
+    /(Developer|Engineer|Designer|Architect)/i,
+  ];
+
+  for (const pattern of titlePatterns) {
+    const match = fullText.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return "";
+}
+
+function extractSummary(fullText, lines) {
+  // Find the Professional Summary section
+  let summaryText = "";
   let inSummary = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
+    const line = lines[i];
 
     if (
-      line.includes("professional summary") ||
-      line.includes("profile") ||
-      line.includes("about me")
+      line.includes("Professional Summary") ||
+      line.includes("PROFESSIONAL SUMMARY")
     ) {
       inSummary = true;
       continue;
@@ -165,311 +331,306 @@ function extractSummary(lines) {
 
     if (inSummary) {
       if (
-        line.includes("experience") ||
-        line.includes("education") ||
-        line.includes("skills")
+        line.includes("Skills") ||
+        line.includes("SKILLS") ||
+        line.includes("Experience") ||
+        line.includes("EXPERIENCE")
       ) {
         break;
       }
 
-      if (lines[i].trim().length > 20) {
-        summary.push(lines[i].trim());
+      if (line.length > 20) {
+        summaryText += line + " ";
       }
-
-      if (summary.length >= 3) break;
     }
   }
 
-  return summary.join(" ");
+  return summaryText.trim() || "";
 }
 
-function extractExperience(lines) {
-  const experiences = [];
-  let inExperience = false;
-  let currentExp = {};
-  let collecting = false;
+function extractSkills(fullText, lines) {
+  const skills = new Set();
 
-  const companyKeywords = [
-    "technologies",
-    "solutions",
-    "ltd",
-    "inc",
-    "pvt",
-    "company",
-    "studio",
-    "hashstudio",
+  // Common tech skills
+  const techSkills = [
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Express.js",
+    "MongoDB",
+    "Git",
+    "Next.js",
+    "Python",
+    "Java",
+    "C++",
+    "HTML",
+    "CSS",
+    "TypeScript",
+    "Angular",
+    "Vue.js",
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "Azure",
+    "GraphQL",
+    "REST API",
+    "SQL",
+    "PostgreSQL",
+    "MySQL",
+    "Redis",
+    "Firebase",
+    "Tailwind",
+    "Bootstrap",
   ];
 
+  // Check each line for skills
+  lines.forEach((line) => {
+    techSkills.forEach((skill) => {
+      if (line.toLowerCase().includes(skill.toLowerCase())) {
+        skills.add(skill);
+      }
+    });
+
+    // Also check comma-separated lists
+    if (line.includes(",")) {
+      const parts = line.split(",");
+      parts.forEach((part) => {
+        const trimmed = part.trim();
+        if (trimmed.length > 1 && trimmed.length < 30) {
+          techSkills.forEach((skill) => {
+            if (trimmed.toLowerCase().includes(skill.toLowerCase())) {
+              skills.add(skill);
+            }
+          });
+        }
+      });
+    }
+  });
+
+  return Array.from(skills);
+}
+
+function extractExperience(fullText, lines) {
+  const experiences = [];
+  let currentExp = null;
+  let inExperience = false;
+
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
     const lowerLine = line.toLowerCase();
 
     if (
       lowerLine.includes("work experience") ||
-      lowerLine.includes("professional experience") ||
-      lowerLine.includes("employment")
+      lowerLine.includes("experience")
     ) {
       inExperience = true;
       continue;
     }
 
-    if (inExperience) {
-      if (
-        lowerLine.includes("education") ||
-        lowerLine.includes("projects") ||
-        lowerLine.includes("skills")
-      ) {
-        if (Object.keys(currentExp).length > 0) {
-          experiences.push(currentExp);
-        }
-        break;
+    if (!inExperience) continue;
+
+    if (
+      lowerLine.includes("projects") ||
+      lowerLine.includes("education") ||
+      lowerLine.includes("skills")
+    ) {
+      if (currentExp) {
+        experiences.push(currentExp);
+      }
+      break;
+    }
+
+    // Look for company names
+    if (
+      line.includes("Technologies") ||
+      line.includes("Solutions") ||
+      line.includes("Pvt. Ltd") ||
+      line.includes("Inc")
+    ) {
+      if (currentExp) {
+        experiences.push(currentExp);
       }
 
-      // Look for company names
-      if (
-        line.length > 2 &&
-        (companyKeywords.some((kw) => lowerLine.includes(kw)) ||
-          /[A-Z][a-z]+ (?:Technologies|Solutions|Ltd|Inc|Pvt)/.test(line))
-      ) {
-        if (Object.keys(currentExp).length > 0) {
-          experiences.push(currentExp);
-        }
+      currentExp = {
+        title: "",
+        company: line,
+        location: "",
+        start_date: "",
+        end_date: "",
+        current: false,
+        description: "",
+        achievements: [],
+      };
+      continue;
+    }
 
-        currentExp = {
-          company: line,
-          position: "",
-          startDate: "",
-          endDate: "",
-          description: "",
-        };
-        collecting = true;
-      }
+    if (!currentExp) continue;
 
-      // Look for position/title
-      if (
-        collecting &&
-        currentExp &&
-        !currentExp.position &&
-        (lowerLine.includes("developer") ||
-          lowerLine.includes("engineer") ||
-          lowerLine.includes("designer") ||
-          lowerLine.includes("manager"))
-      ) {
-        currentExp.position = line;
-      }
+    // Look for job title
+    if (
+      !currentExp.title &&
+      (lowerLine.includes("developer") ||
+        lowerLine.includes("engineer") ||
+        lowerLine.includes("assistant"))
+    ) {
+      currentExp.title = line;
+      continue;
+    }
 
-      // Look for dates
-      if (collecting && currentExp) {
-        const dateMatch = line.match(
-          /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \d{4}\s*(?:-|–|to)\s*(?:Present|Current|\w+ \d{4}|\d{4})/i,
-        );
-        if (dateMatch) {
-          const parts = line.split(/-|–|to/).map((s) => s.trim());
-          if (parts.length >= 2) {
-            currentExp.startDate = parts[0];
-            currentExp.endDate = parts[1];
-          }
-        }
-      }
+    // Look for dates
+    const dateMatch = line.match(
+      /(\d{2}\/\d{4}|\d{4})\s*(?:-|–|to)\s*(\d{2}\/\d{4}|\d{4}|present|current)/i,
+    );
+    if (dateMatch) {
+      currentExp.start_date = dateMatch[1];
+      currentExp.end_date = dateMatch[2].toLowerCase().includes("present")
+        ? ""
+        : dateMatch[2];
+      currentExp.current = dateMatch[2].toLowerCase().includes("present");
+      continue;
+    }
 
-      // Collect description
-      if (
-        collecting &&
-        currentExp &&
-        line.length > 20 &&
-        !companyKeywords.some((kw) => lowerLine.includes(kw))
-      ) {
-        if (currentExp.description) {
-          currentExp.description += " " + line;
-        } else {
-          currentExp.description = line;
-        }
+    // Add to description
+    if (line.length > 15 && !line.includes("@") && !line.includes("http")) {
+      if (currentExp.description) {
+        currentExp.description += " " + line;
+      } else {
+        currentExp.description = line;
       }
     }
-  }
-
-  // Add last experience
-  if (Object.keys(currentExp).length > 0) {
-    experiences.push(currentExp);
   }
 
   return experiences;
 }
 
-function extractEducation(lines) {
+function extractEducation(fullText, lines) {
   const education = [];
+  let currentEdu = null;
   let inEducation = false;
-  let currentEdu = {};
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    if (lowerLine.includes("education") || lowerLine.includes("academic")) {
+    if (lowerLine.includes("education") || lowerLine.includes("EDUCATION")) {
       inEducation = true;
       continue;
     }
 
-    if (inEducation) {
-      if (
-        lowerLine.includes("experience") ||
-        lowerLine.includes("skills") ||
-        lowerLine.includes("projects")
-      ) {
-        if (Object.keys(currentEdu).length > 0) {
-          education.push(currentEdu);
-        }
-        break;
+    if (!inEducation) continue;
+
+    if (
+      lowerLine.includes("projects") ||
+      lowerLine.includes("skills") ||
+      lowerLine.includes("experience")
+    ) {
+      if (currentEdu) {
+        education.push(currentEdu);
+      }
+      break;
+    }
+
+    // Look for institutions
+    if (
+      line.includes("University") ||
+      line.includes("College") ||
+      line.includes("Institute") ||
+      line.includes("IGNOU")
+    ) {
+      if (currentEdu) {
+        education.push(currentEdu);
       }
 
-      // Look for universities/colleges
-      if (
-        line.includes("University") ||
-        line.includes("College") ||
-        line.includes("Institute") ||
-        line.includes("IGNOU") ||
-        line.includes("Delhi") ||
-        line.includes("School")
-      ) {
-        if (Object.keys(currentEdu).length > 0) {
-          education.push(currentEdu);
-        }
+      currentEdu = {
+        degree: "",
+        institution: line,
+        location: "",
+        start_date: "",
+        end_date: "",
+        current: false,
+        grade: "",
+        description: "",
+      };
+      continue;
+    }
 
-        currentEdu = {
-          institution: line,
-          degree: "",
-          field: "",
-          graduationYear: "",
-          gpa: "",
-        };
-      }
+    if (!currentEdu) continue;
 
-      // Look for degree
-      if (currentEdu && !currentEdu.degree) {
-        if (
-          line.includes("MCA") ||
-          line.includes("BCA") ||
-          line.includes("Bachelor") ||
-          line.includes("Master") ||
-          line.includes("B.Tech") ||
-          line.includes("M.Tech")
-        ) {
-          currentEdu.degree = line;
-        }
-      }
+    // Look for degree
+    if (
+      !currentEdu.degree &&
+      (lowerLine.includes("mca") ||
+        lowerLine.includes("bca") ||
+        lowerLine.includes("bachelor") ||
+        lowerLine.includes("master"))
+    ) {
+      currentEdu.degree = line;
+      continue;
+    }
 
-      // Look for GPA
-      if (
-        (currentEdu && line.includes("GPA")) ||
-        line.includes("percentage") ||
-        line.includes("CGPA")
-      ) {
-        currentEdu.gpa = line;
-      }
+    // Look for GPA
+    if (lowerLine.includes("gpa") || lowerLine.includes("cgpa")) {
+      currentEdu.grade = line;
     }
   }
 
   return education;
 }
 
-function extractSkills(lines) {
-  const skills = [];
-  let inSkills = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
-
-    if (
-      line.includes("skills") ||
-      line.includes("technologies") ||
-      line.includes("expertise")
-    ) {
-      inSkills = true;
-      continue;
-    }
-
-    if (inSkills) {
-      if (
-        line.includes("experience") ||
-        line.includes("education") ||
-        line.includes("projects")
-      ) {
-        break;
-      }
-
-      // Split by common separators
-      const lineText = lines[i];
-      const skillItems = lineText
-        .split(/[,•·|/]/)
-        .map((s) => s.trim())
-        .filter((s) => s && s.length > 1);
-
-      skillItems.forEach((skill) => {
-        // Filter out common non-skill words
-        if (
-          !skill
-            .toLowerCase()
-            .match(/^(and|the|with|for|skills?|technologies?)$/)
-        ) {
-          if (!skills.includes(skill)) {
-            skills.push(skill);
-          }
-        }
-      });
-    }
-  }
-
-  // Limit to unique skills
-  return [...new Set(skills)];
-}
-
-function extractProjects(lines) {
+function extractProjects(fullText, lines) {
   const projects = [];
+  let currentProject = null;
   let inProjects = false;
-  let currentProject = {};
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
     const lowerLine = line.toLowerCase();
 
-    if (lowerLine.includes("projects") || lowerLine.includes("portfolio")) {
+    if (lowerLine.includes("projects") || lowerLine.includes("PROJECTS")) {
       inProjects = true;
       continue;
     }
 
-    if (inProjects) {
-      if (
-        lowerLine.includes("skills") ||
-        lowerLine.includes("education") ||
-        lowerLine.includes("experience")
-      ) {
-        if (Object.keys(currentProject).length > 0) {
-          projects.push(currentProject);
-        }
-        break;
+    if (!inProjects) continue;
+
+    if (
+      lowerLine.includes("education") ||
+      lowerLine.includes("skills") ||
+      lowerLine.includes("experience")
+    ) {
+      if (currentProject) {
+        projects.push(currentProject);
+      }
+      break;
+    }
+
+    // Project names are often in all caps
+    if (line === line.toUpperCase() && line.length > 4 && line.length < 40) {
+      if (currentProject) {
+        projects.push(currentProject);
       }
 
-      // Project names are often in uppercase or have specific patterns
-      if (line === line.toUpperCase() && line.length > 3 && line.length < 50) {
-        if (Object.keys(currentProject).length > 0) {
-          projects.push(currentProject);
-        }
+      currentProject = {
+        name: line,
+        description: "",
+        technologies: [],
+        url: "",
+        start_date: "",
+        end_date: "",
+        current: false,
+        highlights: [],
+      };
+      continue;
+    }
 
-        currentProject = {
-          name: line,
-          description: "",
-          technologies: "",
-          link: "",
-        };
-      }
+    if (!currentProject) continue;
 
-      // Collect description
-      if (currentProject && line.length > 20) {
-        if (currentProject.description) {
-          currentProject.description += " " + line;
-        } else {
-          currentProject.description = line;
-        }
+    // Add to description
+    if (line.length > 20 && !line.includes("http")) {
+      if (currentProject.description) {
+        currentProject.description += " " + line;
+      } else {
+        currentProject.description = line;
       }
     }
   }
@@ -477,60 +638,123 @@ function extractProjects(lines) {
   return projects;
 }
 
-function extractCertifications(lines) {
+function extractCertifications(fullText, lines) {
   const certifications = [];
   let inCerts = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].toLowerCase();
+    const line = lines[i];
+    const lowerLine = line.toLowerCase();
 
-    if (line.includes("certifications") || line.includes("certificates")) {
+    if (
+      lowerLine.includes("certifications") ||
+      lowerLine.includes("CERTIFICATIONS")
+    ) {
       inCerts = true;
       continue;
     }
 
-    if (inCerts) {
-      if (line.includes("skills") || line.includes("experience")) {
-        break;
-      }
+    if (!inCerts) continue;
 
-      if (lines[i].trim().length > 3) {
-        certifications.push(lines[i].trim());
-      }
+    if (
+      lowerLine.includes("skills") ||
+      lowerLine.includes("experience") ||
+      lowerLine.includes("projects")
+    ) {
+      break;
+    }
+
+    if (line.length > 5 && line.length < 100 && !line.includes("@")) {
+      certifications.push(line);
     }
   }
 
   return certifications;
 }
 
-function extractLanguages(lines) {
+function extractLanguages(fullText, lines) {
   const languages = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].toLowerCase();
 
-    if (line.includes("languages") || line.includes("language")) {
-      // Look for language entries
-      const nextLines = lines.slice(i + 1, i + 5);
-      nextLines.forEach((l) => {
+    if (line.includes("languages") || line.includes("LANGUAGES")) {
+      for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+        const langLine = lines[j];
         if (
-          l.includes("English") ||
-          l.includes("Hindi") ||
-          l.includes("Spanish") ||
-          l.includes("French") ||
-          l.includes("German")
+          langLine.match(
+            /(English|Hindi|Spanish|French|German|Chinese|Japanese)/i,
+          )
         ) {
-          languages.push({
-            name: l.trim(),
-            proficiency: "Professional",
-          });
+          languages.push(langLine);
         }
-      });
+      }
       break;
     }
   }
 
   return languages;
+}
+
+function extractPortfolioUrl(fullText) {
+  const urlPattern =
+    /(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+\.(?:com|io|dev|app|me|net|org)(?:\/[^\s]*)?/gi;
+  const matches = fullText.match(urlPattern);
+
+  if (matches) {
+    const portfolio = matches.find(
+      (url) =>
+        !url.includes("linkedin") &&
+        !url.includes("github") &&
+        !url.includes("twitter"),
+    );
+    if (portfolio) {
+      return portfolio.startsWith("http") ? portfolio : `https://${portfolio}`;
+    }
+  }
+  return "";
+}
+
+function extractLinkedInUrl(fullText) {
+  const linkedinPattern =
+    /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9-]+\/?/gi;
+  const match = fullText.match(linkedinPattern);
+  if (match) {
+    return match[0].startsWith("http") ? match[0] : `https://${match[0]}`;
+  }
+  return "";
+}
+
+function extractGitHubUrl(fullText) {
+  const githubPattern =
+    /(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9-]+\/?/gi;
+  const match = fullText.match(githubPattern);
+  if (match) {
+    return match[0].startsWith("http") ? match[0] : `https://${match[0]}`;
+  }
+  return "";
+}
+
+function calculateYearsOfExperience(experiences) {
+  if (!experiences || experiences.length === 0) return null;
+
+  let totalYears = 0;
+  const currentYear = new Date().getFullYear();
+
+  experiences.forEach((exp) => {
+    if (exp.start_date) {
+      const startYear = parseInt(exp.start_date.match(/\d{4}/)?.[0]);
+      if (startYear) {
+        let endYear = currentYear;
+        if (exp.end_date && !exp.current) {
+          endYear = parseInt(exp.end_date.match(/\d{4}/)?.[0]) || currentYear;
+        }
+        totalYears += endYear - startYear;
+      }
+    }
+  });
+
+  return totalYears || null;
 }
 
 module.exports = { parsePDF };

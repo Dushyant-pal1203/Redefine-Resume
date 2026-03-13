@@ -1,23 +1,21 @@
-// templates/minimal.template.js
 module.exports = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{full_name}} - Resume</title>
+<title>{{full_name}} - Minimal Resume</title>
 
 <style>
 .resume-minimal-wrapper {
   all: initial;
   display: block;
-  font-family: 'Helvetica Neue', 'Arial', sans-serif;
-  color: #111111;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
   line-height: 1.5;
   background: #ffffff;
-  font-size: 10px;
+  font-size: 10.5px;
 }
-
 
 .resume-minimal-wrapper * {
   box-sizing: border-box;
@@ -25,39 +23,41 @@ module.exports = `
   padding: 0;
 }
 
-/* Main Container - Maximum Whitespace */
+/* Main Container - Clean and Airy */
 .resume-minimal-wrapper .rm-container {
+  max-width: 800px;
+  margin: 0 auto;
   background: white;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  padding: 30px 20px;
+  padding: 35px 40px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.03);
 }
 
-/* Typography - Clean and Simple */
+/* Typography - Minimal and Elegant */
 .resume-minimal-wrapper .rm-name {
-  font-size: 28px;
-  font-weight: 500;
-  letter-spacing: -1px;
-  margin-bottom: 8px;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
   color: #000000;
 }
 
 .resume-minimal-wrapper .rm-headline {
   font-size: 14px;
   font-weight: 300;
-  color: #666666;
-  margin-bottom: 15px;
-  border-bottom: 1px solid #eeeeee;
-  padding-bottom: 10px;
+  color: #5c5c5c;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-/* Contact Bar - Minimal */
+/* Contact Bar - Subtle */
 .resume-minimal-wrapper .rm-contact-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
-  margin-bottom: 20px;
-  color: #444444;
+  gap: 20px 30px;
+  margin-bottom: 25px;
+  color: #4a4a4a;
+  font-size: 12px;
 }
 
 .resume-minimal-wrapper .rm-contact-item {
@@ -66,146 +66,154 @@ module.exports = `
   gap: 6px;
 }
 
-/* Section Titles - Understated */
-.resume-minimal-wrapper .rm-section-title {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin: 15px 0 10px;
-  color: #333333;
-  position: relative;
+.resume-minimal-wrapper .rm-contact-item a {
+  color: #4a4a4a;
+  text-decoration: none;
+  border-bottom: 1px dotted #d4d4d4;
 }
 
-.resume-minimal-wrapper .rm-section-title::after {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 2px;
-  background: #dddddd;
-  margin-top: 8px;
+.resume-minimal-wrapper .rm-contact-item a:hover {
+  color: #000000;
+  border-bottom-color: #999999;
+}
+
+/* Section Titles - Understated with minimal spacing */
+.resume-minimal-wrapper .rm-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 25px 0 12px;
+  color: #2c2c2c;
+}
+
+.resume-minimal-wrapper .rm-section-title:first-of-type {
+  margin-top: 0;
 }
 
 /* Summary - Clean Paragraph */
 .resume-minimal-wrapper .rm-summary {
+  font-size: 12px;
   line-height: 1.8;
-  color: #444444;
-  margin-bottom: 15px;
+  color: #4a4a4a;
+  margin-bottom: 10px;
   font-weight: 300;
 }
 
 /* Experience & Education Items */
 .resume-minimal-wrapper .rm-item {
-  margin-bottom: 15px;
+  margin-bottom: 18px;
 }
 
 .resume-minimal-wrapper .rm-item-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .resume-minimal-wrapper .rm-item-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #111111;
-}
-
-.resume-minimal-wrapper .rm-item-subtitle {
-  font-weight: 400;
-  color: #555555;
-  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
 }
 
 .resume-minimal-wrapper .rm-item-company {
+  font-size: 12px;
   font-weight: 400;
-  color: #555555;
-  margin-bottom: 4px;
+  color: #5c5c5c;
+  margin-bottom: 2px;
 }
 
 .resume-minimal-wrapper .rm-item-date {
-  color: #999999;
+  font-size: 11px;
+  color: #8a8a8a;
   font-weight: 300;
 }
 
 .resume-minimal-wrapper .rm-item-location {
-  color: #777777;
-  margin-bottom: 10px;
+  font-size: 11px;
+  color: #8a8a8a;
+  margin-bottom: 8px;
   font-weight: 300;
 }
 
 .resume-minimal-wrapper .rm-item-description {
-  color: #444444;
+  font-size: 12px;
+  color: #4a4a4a;
   line-height: 1.7;
   font-weight: 300;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
-/* Achievement List - Minimal Bullets */
+/* Achievement List - Minimal Dash */
 .resume-minimal-wrapper .rm-achievement-list {
   list-style: none;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .resume-minimal-wrapper .rm-achievement-item {
-  color: #444444;
-  margin-bottom: 6px;
-  padding-left: 18px;
+  font-size: 12px;
+  color: #4a4a4a;
+  margin-bottom: 4px;
+  padding-left: 14px;
   position: relative;
   font-weight: 300;
   line-height: 1.6;
 }
 
 .resume-minimal-wrapper .rm-achievement-item::before {
-  content: '–';
+  content: '—';
   position: absolute;
   left: 0;
-  color: #999999;
+  color: #b0b0b0;
 }
 
-/* Skills - Clean Tags */
+/* Skills - Minimal Separator */
 .resume-minimal-wrapper .rm-skills-section {
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 }
 
 .resume-minimal-wrapper .rm-skills-category {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .resume-minimal-wrapper .rm-skills-category h4 {
+  font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #555555;
-  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+  color: #6a6a6a;
+  margin-bottom: 8px;
 }
 
 .resume-minimal-wrapper .rm-skills-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  gap: 6px 20px;
 }
 
 .resume-minimal-wrapper .rm-skill-item {
-  color: #444444;
+  font-size: 12px;
+  color: #4a4a4a;
   font-weight: 300;
   position: relative;
 }
 
 .resume-minimal-wrapper .rm-skill-item:not(:last-child)::after {
   content: '·';
-  margin-left: 16px;
-  color: #cccccc;
+  position: absolute;
+  right: -12px;
+  color: #c0c0c0;
 }
 
-/* Projects - Simple Cards */
+/* Projects - Minimal Cards */
 .resume-minimal-wrapper .rm-project-item {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   padding-bottom: 15px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f5f5f5;
 }
 
 .resume-minimal-wrapper .rm-project-item:last-child {
@@ -213,115 +221,124 @@ module.exports = `
   padding-bottom: 0;
 }
 
+.resume-minimal-wrapper .rm-project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
 .resume-minimal-wrapper .rm-project-name {
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  color: #111111;
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
 }
 
 .resume-minimal-wrapper .rm-project-tech {
-  color: #888888;
-  margin-bottom: 10px;
+  font-size: 11px;
+  color: #7a7a7a;
+  margin-bottom: 6px;
   font-weight: 300;
-  letter-spacing: 0.3px;
 }
 
 .resume-minimal-wrapper .rm-project-description {
-  color: #444444;
+  font-size: 12px;
+  color: #4a4a4a;
   line-height: 1.7;
   font-weight: 300;
+  margin-bottom: 6px;
 }
 
 .resume-minimal-wrapper .rm-project-link {
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .resume-minimal-wrapper .rm-project-link a {
-  color: #555555;
+  font-size: 11px;
+  color: #6a6a6a;
   text-decoration: none;
-  border-bottom: 1px dotted #cccccc;
-  font-weight: 300;
+  border-bottom: 1px dotted #d0d0d0;
 }
 
-.resume-minimal-wrapper .rm-project-link a:hover {
-  color: #000000;
-  border-bottom-color: #999999;
-}
-
-/* Languages - Simple Layout */
+/* Languages - Simple Two Column */
 .resume-minimal-wrapper .rm-languages-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 40px;
-  margin-top: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 20px;
+  margin-top: 8px;
 }
 
 .resume-minimal-wrapper .rm-language-item {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   border-bottom: 1px dotted #eeeeee;
 }
 
 .resume-minimal-wrapper .rm-language-name {
+  font-size: 12px;
   font-weight: 400;
   color: #333333;
 }
 
 .resume-minimal-wrapper .rm-language-level {
-  color: #888888;
+  font-size: 11px;
+  color: #8a8a8a;
   font-weight: 300;
-  font-style: italic;
 }
 
 /* Certifications - Clean List */
 .resume-minimal-wrapper .rm-cert-item {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .resume-minimal-wrapper .rm-cert-name {
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 400;
   color: #333333;
   margin-bottom: 2px;
 }
 
 .resume-minimal-wrapper .rm-cert-issuer {
-  color: #777777;
+  font-size: 11px;
+  color: #7a7a7a;
   font-weight: 300;
 }
 
 .resume-minimal-wrapper .rm-cert-date {
-  color: #aaaaaa;
-  margin-top: 2px;
+  font-size: 11px;
+  color: #9a9a9a;
+  margin-top: 1px;
   font-weight: 300;
 }
 
 /* Awards & Publications */
 .resume-minimal-wrapper .rm-award-item,
 .resume-minimal-wrapper .rm-publication-item {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .resume-minimal-wrapper .rm-award-name,
 .resume-minimal-wrapper .rm-publication-title {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   color: #333333;
   margin-bottom: 2px;
 }
 
 .resume-minimal-wrapper .rm-award-desc,
 .resume-minimal-wrapper .rm-publication-details {
-  color: #777777;
+  font-size: 11px;
+  color: #7a7a7a;
   font-weight: 300;
   line-height: 1.6;
 }
 
 /* Volunteering */
 .resume-minimal-wrapper .rm-volunteer-item {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .resume-minimal-wrapper .rm-volunteer-org {
@@ -332,21 +349,23 @@ module.exports = `
 }
 
 .resume-minimal-wrapper .rm-volunteer-role {
-  color: #666666;
+  font-size: 11px;
+  color: #6a6a6a;
   font-weight: 300;
   margin-bottom: 4px;
 }
 
-/* Interests - Simple Tags */
+/* Interests - Minimal Dots */
 .resume-minimal-wrapper .rm-interests {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-top: 10px;
+  gap: 16px 24px;
+  margin-top: 8px;
 }
 
 .resume-minimal-wrapper .rm-interest-item {
-  color: #555555;
+  font-size: 12px;
+  color: #4a4a4a;
   font-weight: 300;
   position: relative;
 }
@@ -355,54 +374,40 @@ module.exports = `
   content: '·';
   position: absolute;
   left: -12px;
-  color: #cccccc;
+  color: #c0c0c0;
 }
 
 .resume-minimal-wrapper .rm-interest-item:first-child::before {
   display: none;
 }
 
-/* Divider Line */
-.resume-minimal-wrapper .rm-divider {
-  height: 1px;
-  background: #f0f0f0;
-  margin: 30px 0;
-}
-
 /* Footer */
 .resume-minimal-wrapper .rm-footer {
-  margin-top: 50px;
-  padding-top: 20px;
+  margin-top: 30px;
+  padding-top: 15px;
   border-top: 1px solid #f0f0f0;
   text-align: center;
-  color: #aaaaaa;
+  color: #b0b0b0;
+  font-size: 10px;
   font-weight: 300;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 /* Print Styles */
 @media print {
-  .resume-modern-wrapper {
+  .resume-minimal-wrapper {
     background: white;
-    padding: 0;
+  }
+  .resume-minimal-wrapper .rm-container {
+    box-shadow: none;
+    padding: 20px;
   }
 }
 
 /* Selection Style */
 .resume-minimal-wrapper ::selection {
-  background: #f0f0f0;
+  background: #f5f5f5;
   color: #000000;
-}
-
-/* Links */
-.resume-minimal-wrapper a {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 1px dotted #dddddd;
-}
-
-.resume-minimal-wrapper a:hover {
-  border-bottom-color: #999999;
 }
 </style>
 </head>
@@ -413,65 +418,37 @@ module.exports = `
 
   <!-- Header -->
   <div class="rm-name">{{full_name}}</div>
-  <div class="rm-headline">{{job_title}}{{#if headline}} · {{headline}}{{/if}}</div>
+  <div class="rm-headline">{{#if job_title}}{{job_title}}{{else}}Professional{{/if}}{{#if headline}} · {{headline}}{{/if}}</div>
 
   <!-- Contact Bar -->
   <div class="rm-contact-bar">
     {{#if email}}<span class="rm-contact-item">✉ {{email}}</span>{{/if}}
     {{#if phone}}<span class="rm-contact-item">📱 {{phone}}</span>{{/if}}
     {{#if location}}<span class="rm-contact-item">📍 {{location}}</span>{{/if}}
-  </div>
-  <div class="rm-contact-bar">
     {{#if portfolio_url}}
       <span class="rm-contact-item">
         🌐 
         <a href="{{portfolio_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if portfolio_display}}
-            {{portfolio_display}}
-          {{else}}
-            {{#if portfolio_url}}
-              {{portfolio_url}}
-            {{else}}
-              Portfolio
-            {{/if}}
-          {{/if}}
+          {{#if portfolio_display}}{{portfolio_display}}{{else}}Portfolio{{/if}}
         </a>
       </span>
-      {{/if}}
-      
-      {{#if linkedin_url}}
+    {{/if}}
+    {{#if linkedin_url}}
       <span class="rm-contact-item">
         🔗 
         <a href="{{linkedin_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if linkedin_display}}
-            {{linkedin_display}}
-          {{else}}
-            {{#if linkedin_url}}
-              {{linkedin_url}}
-            {{else}}
-              LinkedIn
-            {{/if}}
-          {{/if}}
+          {{#if linkedin_display}}{{linkedin_display}}{{else}}LinkedIn{{/if}}
         </a>
       </span>
-      {{/if}}
-      
-      {{#if github_url}}
+    {{/if}}
+    {{#if github_url}}
       <span class="rm-contact-item">
         💻 
         <a href="{{github_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if github_display}}
-            {{github_display}}
-          {{else}}
-            {{#if github_url}}
-              {{github_url}}
-            {{else}}
-              GitHub
-            {{/if}}
-          {{/if}}
+          {{#if github_display}}{{github_display}}{{else}}GitHub{{/if}}
         </a>
       </span>
-      {{/if}}
+    {{/if}}
   </div>
 
   <!-- Professional Summary -->
@@ -519,27 +496,48 @@ module.exports = `
     </div>
     <div class="rm-item-company">{{#if this.institution}}{{this.institution}}{{else}}{{this.school}}{{/if}}</div>
     {{#if this.location}}<div class="rm-item-location">{{this.location}}</div>{{/if}}
-    {{#if this.grade}}<div style="font-size: 14px; color: #777777; margin: 4px 0;">{{this.grade}}</div>{{/if}}
-    {{#if this.description}}<div class="rm-item-description">{{this.description}}</div>{{/if}}
+    {{#if this.grade}}<div style="font-size: 11px; color: #7a7a7a; margin: 2px 0;">{{this.grade}}</div>{{/if}}
   </div>
   {{/each}}
   {{/if}}
 
   <!-- Skills -->
-  {{#if skills.technical.length}}
+  {{#if technical_skills.length}}
   <div class="rm-section-title">Skills</div>
   <div class="rm-skills-section">
-    {{#if skills.technical.length}}
     <div class="rm-skills-category">
-      <h4>Technical</h4>
+      <h4>Technical Skills</h4>
       <div class="rm-skills-grid">
-        {{#each skills.technical}}
+        {{#each technical_skills}}
         <span class="rm-skill-item">{{this}}</span>
         {{/each}}
       </div>
     </div>
+  {{else}}
+    {{#if skills.technical.length}}
+    <div class="rm-section-title">Skills</div>
+    <div class="rm-skills-section">
+      <div class="rm-skills-category">
+        <h4>Technical Skills</h4>
+        <div class="rm-skills-grid">
+          {{#each skills.technical}}
+          <span class="rm-skill-item">{{this}}</span>
+          {{/each}}
+        </div>
+      </div>
     {{/if}}
-    
+  {{/if}}
+  
+  {{#if soft_skills.length}}
+    <div class="rm-skills-category">
+      <h4>Soft Skills</h4>
+      <div class="rm-skills-grid">
+        {{#each soft_skills}}
+        <span class="rm-skill-item">{{this}}</span>
+        {{/each}}
+      </div>
+    </div>
+  {{else}}
     {{#if skills.soft.length}}
     <div class="rm-skills-category">
       <h4>Soft Skills</h4>
@@ -550,49 +548,69 @@ module.exports = `
       </div>
     </div>
     {{/if}}
-  </div>
   {{/if}}
+  
+  {{#if programming_languages.length}}
+    <div class="rm-skills-category">
+      <h4>Programming Languages</h4>
+      <div class="rm-skills-grid">
+        {{#each programming_languages}}
+        <span class="rm-skill-item">{{this}}</span>
+        {{/each}}
+      </div>
+    </div>
+  {{else}}
+    {{#if skills.languages.length}}
+    <div class="rm-skills-category">
+      <h4>Programming Languages</h4>
+      <div class="rm-skills-grid">
+        {{#each skills.languages}}
+        <span class="rm-skill-item">{{this}}</span>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+  {{/if}}
+  </div>
 
   <!-- Projects -->
   {{#if projects.length}}
   <div class="rm-section-title">Projects</div>
   {{#each projects}}
   <div class="rm-project-item">
-    <div class="rm-project-name">{{this.name}}</div>
+    <div class="rm-project-header">
+      <span class="rm-project-name">{{this.name}}</span>
+      {{#if this.start_date}}
+      <span class="rm-item-date">{{this.start_date}}{{#if this.end_date}} – {{this.end_date}}{{/if}}</span>
+      {{/if}}
+    </div>
     {{#if this.technologies.length}}
     <div class="rm-project-tech">
-      {{#each this.technologies}}
-        {{#if @first}}{{else}} · {{/if}}{{this}}
-      {{/each}}
+      {{#each this.technologies}}{{#if @index}} · {{/if}}{{this}}{{/each}}
     </div>
     {{/if}}
     <div class="rm-project-description">{{this.description}}</div>
     {{#if this.url}}
-    <div class="rm-project-link"><a href="{{this.url}}" style="color: #4158D0; text-decoration: none; margin-top: 8px; display: inline-block;" target="_blank" rel="noopener noreferrer">🔗 View Project →</a></div>
-    {{/if}}
-    {{#if this.start_date}}
-    <div style="font-size: 13px; color: #aaaaaa; margin-top: 6px;">
-      {{this.start_date}} – {{#if this.current}}Present{{else}}{{this.end_date}}{{/if}}
-    </div>
+    <div class="rm-project-link"><a href="{{this.url}}" target="_blank" rel="noopener noreferrer">View Project →</a></div>
     {{/if}}
   </div>
   {{/each}}
   {{/if}}
 
-  <!-- Languages Section -->
+  <!-- Languages -->
   {{#if languages.length}}
   <div class="rm-section-title">Languages</div>
   <div class="rm-languages-grid">
     {{#each languages}}
     <div class="rm-language-item">
       <span class="rm-language-name">{{#if this.language}}{{this.language}}{{else}}{{this}}{{/if}}</span>
-      <span class="rm-language-level">{{#if this.proficiency}}{{this.proficiency}}{{else}}Fluent{{/if}}</span>
+      <span class="rm-language-level">{{#if this.proficiency}}{{this.proficiency}}{{else}}Professional{{/if}}</span>
     </div>
     {{/each}}
   </div>
   {{/if}}
 
-  <!-- Certifications Section -->
+  <!-- Certifications -->
   {{#if certifications.length}}
   <div class="rm-section-title">Certifications</div>
   {{#each certifications}}
@@ -604,7 +622,7 @@ module.exports = `
   {{/each}}
   {{/if}}
 
-  <!-- Awards Section -->
+  <!-- Awards -->
   {{#if awards.length}}
   <div class="rm-section-title">Awards</div>
   {{#each awards}}
@@ -615,7 +633,7 @@ module.exports = `
   {{/each}}
   {{/if}}
 
-  <!-- Publications Section -->
+  <!-- Publications -->
   {{#if publications.length}}
   <div class="rm-section-title">Publications</div>
   {{#each publications}}
@@ -646,13 +664,6 @@ module.exports = `
     {{#each interests}}
     <span class="rm-interest-item">{{this}}</span>
     {{/each}}
-  </div>
-  {{/if}}
-
-  <!-- Footer with Years of Experience -->
-  {{#if years_of_experience}}
-  <div class="rm-footer">
-    {{years_of_experience}}+ years of professional experience
   </div>
   {{/if}}
 </div>

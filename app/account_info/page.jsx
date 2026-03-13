@@ -26,7 +26,8 @@ import {
     Download,
     Trash2,
     AlertTriangle,
-    ArrowLeft
+    ArrowLeft,
+    Loader2
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { useToast } from '@/hooks/use-toast';

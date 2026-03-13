@@ -28,7 +28,8 @@ import {
     Menu,
     X,
     Download,
-    ChevronDown
+    ChevronDown,
+    FileOutput
 } from "lucide-react";
 import ResumeEditor from '@/components/EditorSection/ResumeEditor';
 import LivePreview from '@/components/EditorSection/LivePreview';
@@ -731,10 +732,11 @@ function EditorContent() {
                                     template={selectedTemplate}
                                     variant="default"
                                     size="sm"
-                                    label="Download PDF"
+                                    label="PDF Export"
+                                    icon={FileOutput}
                                     showIcon={true}
                                     showLabel={true}
-                                    resumeData={resumeData} // Pass the current resume data
+                                    resumeData={resumeData}
                                     className="p-4 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
                                 />
                             </motion.div>

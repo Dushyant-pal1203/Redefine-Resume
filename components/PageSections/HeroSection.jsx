@@ -3,6 +3,9 @@
 import PdfUpload from "@/components/FunctionComponent/PdfUpload";
 import { motion } from "framer-motion";
 import { useUser } from "@/hooks/use-user";
+import {
+    FileInput,
+} from "lucide-react";
 
 export default function HeroSection() {
     const { user } = useUser();
@@ -37,9 +40,18 @@ export default function HeroSection() {
 
                             {/* Button Section */}
                             <PdfUpload
-                                className="justify-items-center sm:justify-items-start"
                                 userId={user?.id}
-                                showDragDrop={false} />
+                                className="justify-items-center sm:justify-items-start"
+                                showDragDrop={false}
+                                firstButtonText="FORGE NEW ARTIFACT"
+                                secondButtonText="UPLOAD RESUME"
+                                // firstButtonIcon={Sparkles}
+                                secondButtonIcon={FileInput}
+                                // firstButtonClassName="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:shadow-2xl hover:shadow-purple-500/50 relative overflow-hidden group"
+                                // secondButtonClassName="!bg-[#00f3ff1c] hover:!bg-[#00f3ff30] text-white border border-cyan-500/50"
+                                layout="horizontal"
+                                gap="gap-6"
+                            />
                         </div>
                     </div>
                 </div>

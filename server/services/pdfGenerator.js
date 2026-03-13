@@ -1,3 +1,4 @@
+// server/services/pdfGenerator.js
 const puppeteer = require("puppeteer");
 const handlebars = require("handlebars");
 const templates = require("../templates");
@@ -36,6 +37,11 @@ class PDFGenerator {
     // Helper for comparisons
     handlebars.registerHelper("eq", function (a, b) {
       return a === b;
+    });
+
+    // Helper for not equal
+    handlebars.registerHelper("neq", function (a, b) {
+      return a !== b;
     });
 
     // Helper to join array with separator
@@ -87,6 +93,46 @@ class PDFGenerator {
           obj,
         );
     });
+
+    // Helper to add index to arrays
+    handlebars.registerHelper("withIndex", function (array, options) {
+      if (!array || !Array.isArray(array)) return "";
+      let result = "";
+      for (let i = 0; i < array.length; i++) {
+        result += options.fn({
+          ...array[i],
+          index: i,
+          first: i === 0,
+          last: i === array.length - 1,
+        });
+      }
+      return result;
+    });
+
+    // Helper to check if string contains substring
+    handlebars.registerHelper("contains", function (str, substring, options) {
+      if (str && str.includes(substring)) {
+        return options.fn(this);
+      }
+      return options.inverse(this);
+    });
+
+    // Helper to truncate text
+    handlebars.registerHelper("truncate", function (text, length) {
+      if (!text) return "";
+      if (text.length <= length) return text;
+      return text.substring(0, length) + "...";
+    });
+
+    // Helper to calculate years of experience
+    handlebars.registerHelper("calculateYears", function (startDate, endDate) {
+      if (!startDate) return "";
+      const start = new Date(startDate);
+      const end =
+        endDate && endDate !== "Present" ? new Date(endDate) : new Date();
+      const years = (end - start) / (1000 * 60 * 60 * 24 * 365);
+      return Math.round(years * 10) / 10;
+    });
   }
 
   async getBrowser() {
@@ -112,8 +158,8 @@ class PDFGenerator {
 
   prepareDataForTemplate(resumeData) {
     console.log(
-      "Preparing data for template:",
-      JSON.stringify(resumeData, null, 2),
+      "📊 Preparing data for template:",
+      JSON.stringify(resumeData, null, 2).substring(0, 500) + "...",
     );
 
     let data = { ...resumeData };
@@ -123,9 +169,10 @@ class PDFGenerator {
     const summary = data.summary || {};
     const skills = data.skills || {};
 
-    // Prepare experience array
+    // Prepare experience array with all fields
     const experience = Array.isArray(data.experience)
-      ? data.experience.map((exp) => ({
+      ? data.experience.map((exp, index) => ({
+          id: index,
           title: exp.title || exp.position || "",
           company: exp.company || "",
           location: exp.location || "",
@@ -133,14 +180,19 @@ class PDFGenerator {
           end_date: exp.end_date || exp.endDate || "",
           current: exp.current || false,
           description: exp.description || "",
-          achievements: exp.achievements || [],
+          achievements: Array.isArray(exp.achievements)
+            ? exp.achievements
+            : exp.highlights
+              ? exp.highlights
+              : [],
           position: exp.title || exp.position || "",
         }))
       : [];
 
     // Prepare education array
     const education = Array.isArray(data.education)
-      ? data.education.map((edu) => ({
+      ? data.education.map((edu, index) => ({
+          id: index,
           degree: edu.degree || "",
           institution: edu.institution || edu.school || "",
           location: edu.location || "",
@@ -150,19 +202,22 @@ class PDFGenerator {
           grade: edu.grade || "",
           description: edu.description || "",
           school: edu.institution || edu.school || "",
+          achievements: edu.achievements || [],
         }))
       : [];
 
     // Prepare projects array
     const projects = Array.isArray(data.projects)
-      ? data.projects.map((proj) => ({
-          name: proj.name || "",
+      ? data.projects.map((proj, index) => ({
+          id: index,
+          name: proj.name || proj.title || "",
           description: proj.description || "",
-          technologies: proj.technologies || [],
-          url: proj.url || "",
-          start_date: proj.start_date || "",
-          end_date: proj.end_date || "",
-          highlights: proj.highlights || [],
+          technologies: proj.technologies || proj.tech || proj.stack || [],
+          url: proj.url || proj.link || "",
+          start_date: proj.start_date || proj.startDate || "",
+          end_date: proj.end_date || proj.endDate || "",
+          current: proj.current || false,
+          highlights: proj.highlights || proj.achievements || [],
         }))
       : [];
 
@@ -183,7 +238,58 @@ class PDFGenerator {
 
     // Prepare certifications
     const certifications = Array.isArray(data.certifications)
-      ? data.certifications
+      ? data.certifications.map((cert, index) => ({
+          id: index,
+          name: cert.name || cert.title || "",
+          issuer: cert.issuer || cert.issuing_organization || "",
+          date: cert.date || cert.issue_date || "",
+          url: cert.url || cert.link || "",
+          description: cert.description || "",
+        }))
+      : [];
+
+    // Prepare awards
+    const awards = Array.isArray(data.awards)
+      ? data.awards.map((award, index) => ({
+          id: index,
+          name: award.name || award.title || "",
+          description: award.description || "",
+          date: award.date || award.year || "",
+          issuer: award.issuer || "",
+        }))
+      : [];
+
+    // Prepare publications
+    const publications = Array.isArray(data.publications)
+      ? data.publications.map((pub, index) => ({
+          id: index,
+          title: pub.title || "",
+          publisher: pub.publisher || pub.journal || "",
+          date: pub.date || pub.published_date || "",
+          url: pub.url || pub.link || "",
+          description: pub.description || pub.abstract || "",
+        }))
+      : [];
+
+    // Prepare volunteering
+    const volunteering = Array.isArray(data.volunteering)
+      ? data.volunteering.map((vol, index) => ({
+          id: index,
+          organization: vol.organization || vol.org || "",
+          role: vol.role || vol.position || "",
+          start_date: vol.start_date || vol.startDate || "",
+          end_date: vol.end_date || vol.endDate || "",
+          current: vol.current || false,
+          description: vol.description || "",
+          achievements: vol.achievements || [],
+        }))
+      : [];
+
+    // Prepare interests
+    const interests = Array.isArray(data.interests)
+      ? data.interests.map((i) =>
+          typeof i === "string" ? i : i.name || i.interest || "",
+        )
       : [];
 
     // Extract social links with proper field mapping
@@ -194,17 +300,49 @@ class PDFGenerator {
     const githubUrl =
       personal.github_url || personal.github || data.github || "";
 
-    // FIXED: Get display names from personal object
-    const portfolioDisplay = personal.portfolio_display || "";
-    const linkedinDisplay = personal.linkedin_display || "";
-    const githubDisplay = personal.github_display || "";
+    // Get display names
+    const portfolioDisplay =
+      personal.portfolio_display ||
+      portfolioUrl.replace(/^https?:\/\//, "").split("/")[0] ||
+      "portfolio";
+    const linkedinDisplay =
+      personal.linkedin_display ||
+      "linkedin.com/in/" + (personal.linkedin_username || "");
+    const githubDisplay =
+      personal.github_display ||
+      "github.com/" + (personal.github_username || "");
 
-    // Clean up URLs - remove any leading/trailing spaces
+    // Clean up URLs
     const cleanPortfolio = portfolioUrl.trim();
     const cleanLinkedin = linkedinUrl.trim();
     const cleanGithub = githubUrl.trim();
 
-    // Prepare the final data object specifically for template
+    // Calculate total years of experience if not provided
+    let yearsOfExperience = data.years_of_experience || 0;
+    if (!yearsOfExperience && experience.length > 0) {
+      const dates = experience
+        .map((exp) => {
+          const start = exp.start_date ? new Date(exp.start_date) : null;
+          const end = exp.current
+            ? new Date()
+            : exp.end_date
+              ? new Date(exp.end_date)
+              : null;
+          return { start, end };
+        })
+        .filter((d) => d.start);
+
+      if (dates.length > 0) {
+        const totalMonths = dates.reduce((acc, d) => {
+          const end = d.end || new Date();
+          const months = (end - d.start) / (1000 * 60 * 60 * 24 * 30.44);
+          return acc + months;
+        }, 0);
+        yearsOfExperience = Math.round((totalMonths / 12) * 10) / 10;
+      }
+    }
+
+    // Prepare the final data object
     const preparedData = {
       // Personal Information
       full_name: personal.full_name || data.full_name || "",
@@ -216,13 +354,11 @@ class PDFGenerator {
       phone: personal.phone || data.phone || "",
       location: personal.location || data.location || "",
 
-      // Social Links -
+      // Social Links
       portfolio_display: portfolioDisplay,
       portfolio_url: cleanPortfolio,
-
       linkedin_display: linkedinDisplay,
       linkedin_url: cleanLinkedin,
-
       github_display: githubDisplay,
       github_url: cleanGithub,
 
@@ -235,18 +371,21 @@ class PDFGenerator {
       professional_summary:
         summary.summary || data.professional_summary || data.summary || "",
 
-      // Experience - your template accesses these fields
+      // Experience
       experience: experience,
 
       // Education
       education: education,
 
-      // Skills - your template uses skills.technical and skills.soft
+      // Skills
       skills: {
         technical: Array.isArray(skills.technical) ? skills.technical : [],
         soft: Array.isArray(skills.soft) ? skills.soft : [],
-        languages: languages,
+        languages: skills.languages || [],
       },
+      technical_skills: Array.isArray(skills.technical) ? skills.technical : [],
+      soft_skills: Array.isArray(skills.soft) ? skills.soft : [],
+      programming_languages: skills.languages || [],
 
       // Languages
       languages: languages,
@@ -256,13 +395,13 @@ class PDFGenerator {
 
       // Other sections
       certifications: certifications,
-      publications: Array.isArray(data.publications) ? data.publications : [],
-      awards: Array.isArray(data.awards) ? data.awards : [],
-      volunteering: Array.isArray(data.volunteering) ? data.volunteering : [],
-      interests: Array.isArray(data.interests) ? data.interests : [],
+      publications: publications,
+      awards: awards,
+      volunteering: volunteering,
+      interests: interests,
 
       // Years of experience
-      years_of_experience: data.years_of_experience || 0,
+      years_of_experience: yearsOfExperience,
 
       // Template settings
       template: data.template || "modern",
@@ -277,10 +416,7 @@ class PDFGenerator {
       }),
     };
 
-    console.log(
-      "Prepared data for PDF:",
-      JSON.stringify(preparedData, null, 2),
-    );
+    console.log("✅ Data prepared successfully");
     return preparedData;
   }
 
@@ -306,44 +442,84 @@ class PDFGenerator {
         ...options,
       };
 
-      console.log(
-        "Final data for PDF generation:",
-        JSON.stringify(data, null, 2),
-      );
-
       // Compile template with Handlebars
       const compiledTemplate = handlebars.compile(templateHtml);
       let html = compiledTemplate(data);
 
-      // Add minimal print-specific styles that won't override template styles
+      // Add print-specific styles that won't override template styles
       const printStyles = `
         <style>
-          /* Only add print-specific styles that don't interfere with template */
           @media print {
             body { 
               margin: 0; 
               padding: 0; 
               background: white; 
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
             
             /* Prevent page breaks inside sections */
-            section, .rm-timeline-item, .rm-project-item, .rm-cert-item {
+            .rm-timeline-item, 
+            .rm-project-item, 
+            .rm-cert-item,
+            .rm-award-item,
+            .rm-volunteer-item,
+            .rm-publication-item,
+            .rc-card,
+            .rp-experience-item,
+            .rm-item {
               page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            
+            /* Keep headers with content */
+            .rm-section-title,
+            .rp-section-title,
+            .rc-section-title {
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            
+            /* Avoid page breaks right after headers */
+            h1, h2, h3, h4 {
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            
+            /* Ensure tables don't break weirdly */
+            table {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            
+            /* Links don't need to show URL in print */
+            a {
+              text-decoration: none;
+            }
+            
+            /* Ensure background colors print */
+            * {
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
           }
+          
+          /* Ensure fonts load properly */
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
         </style>
       `;
 
-      // Wrap the template content without adding extra styling
+      // Wrap the template content
       html = `
         <!DOCTYPE html>
         <html>
           <head>
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
             ${printStyles}
           </head>
-          <body style="margin: 0; padding: 5px; background: white;">
+          <body style="margin: 0; padding: 0; background: white; font-family: 'Inter', sans-serif;">
             ${html}
           </body>
         </html>
@@ -353,42 +529,46 @@ class PDFGenerator {
       browser = await this.getBrowser();
       page = await browser.newPage();
 
-      // Set viewport to match letter size
+      // Set viewport
       await page.setViewport({
-        width: 816,
-        height: 1056,
+        width: 1200,
+        height: 1600,
         deviceScaleFactor: 2,
       });
 
-      // Set content
+      // Set content with longer timeout
       await page.setContent(html, {
         waitUntil: ["load", "networkidle0"],
-        timeout: 30000,
+        timeout: 60000,
       });
 
       // Wait for fonts and rendering
       await page.evaluateHandle("document.fonts.ready");
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000);
 
-      // Generate PDF with appropriate margins
+      // Generate PDF with proper margins
       const pdfBuffer = await page.pdf({
         format: "Letter",
         printBackground: true,
         margin: {
-          top: "0in",
-          bottom: "0in",
-          left: "0in",
-          right: "0in",
+          top: "0.4in",
+          bottom: "0.4in",
+          left: "0.4in",
+          right: "0.4in",
         },
         preferCSSPageSize: true,
       });
 
-      console.log(`✅ PDF generated successfully (${pdfBuffer.length} bytes)`);
+      console.log(
+        `✅ PDF generated successfully (${(pdfBuffer.length / 1024).toFixed(2)} KB)`,
+      );
 
       return pdfBuffer;
     } catch (error) {
       console.error("❌ PDF Generation Error:", error);
       throw new Error(`Failed to generate PDF: ${error.message}`);
+    } finally {
+      // Don't close browser here, keep it for reuse
     }
   }
 

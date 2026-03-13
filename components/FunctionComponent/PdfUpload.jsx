@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { FileUp, Sparkles, Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useUploadResume } from "@/hooks/use-resumes"; // This is correct - remove the duplicate import
+import { useUploadResume } from "@/hooks/use-resumes";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth"; // Make sure you have this hook
 
 export default function PdfUpload({
     // Core props
@@ -16,8 +17,13 @@ export default function PdfUpload({
     onUploadError,
     onStartFromScratch,
 
-    // User ID (required for upload)
-    userId,
+    // User ID (optional now - will use auth if not provided)
+    userId: propUserId,
+
+    // Authentication props
+    requireAuth = true, // Whether to require authentication
+    loginPath = "/login", // Path to redirect to for login
+    onAuthRequired, // Custom callback when auth is required
 
     // Button customization
     firstButtonText = "Start from Scratch",
@@ -59,11 +65,17 @@ export default function PdfUpload({
     const [uploadProgress, setUploadProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState(null);
 
+    // Get auth state
+    const { user, isAuthenticated } = useAuth();
     const { uploadResume, isLoading: isUploading, progress: hookProgress } = useUploadResume();
 
     const { toast } = useToast();
     const router = useRouter();
     const fileInputRef = useRef(null);
+
+    // Determine the effective userId (prop takes precedence over auth)
+    const effectiveUserId = propUserId || user?.id;
+    const isUserAuthenticated = propUserId ? true : isAuthenticated;
 
     const FirstIcon = firstButtonIcon;
     const SecondIcon = secondButtonIcon;
@@ -73,6 +85,24 @@ export default function PdfUpload({
         default: "px-8 py-6 text-base",
         lg: "px-10 py-7 text-lg"
     };
+
+    const handleAuthRequired = useCallback((action = "perform this action") => {
+        if (onAuthRequired) {
+            onAuthRequired(action);
+        } else {
+            toast({
+                title: "🔒 Authentication Required",
+                description: `Please log in to ${action}.`,
+                variant: "default",
+            });
+
+            // Store the intended action in session storage
+            sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+
+            // Navigate to login page
+            router.push(loginPath);
+        }
+    }, [onAuthRequired, loginPath, router, toast]);
 
     const handleDragOver = useCallback((e) => {
         e.preventDefault();
@@ -87,6 +117,12 @@ export default function PdfUpload({
         e.preventDefault();
         setIsDragging(false);
 
+        // Check authentication first
+        if (requireAuth && !isUserAuthenticated) {
+            handleAuthRequired("upload a resume");
+            return;
+        }
+
         const file = e.dataTransfer.files[0];
         if (file && file.type === "application/pdf") {
             setSelectedFile(file);
@@ -99,11 +135,18 @@ export default function PdfUpload({
                 variant: "destructive",
             });
         }
-    }, [toast]);
+    }, [toast, requireAuth, isUserAuthenticated, handleAuthRequired]);
 
     const handleFileSelect = useCallback(async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // Check authentication first
+        if (requireAuth && !isUserAuthenticated) {
+            handleAuthRequired("upload a resume");
+            e.target.value = "";
+            return;
+        }
 
         if (file.type !== "application/pdf") {
             setUploadError("Please upload a PDF file");
@@ -118,7 +161,7 @@ export default function PdfUpload({
         setSelectedFile(file);
         await handleFileUpload(file);
         e.target.value = "";
-    }, [toast]);
+    }, [toast, requireAuth, isUserAuthenticated, handleAuthRequired]);
 
     const handleFileUpload = useCallback(async (file) => {
         setUploadError("");
@@ -130,8 +173,14 @@ export default function PdfUpload({
             if (shouldProceed === false) return;
         }
 
-        // Check if userId is provided
-        if (!userId) {
+        // Double-check authentication before upload
+        if (requireAuth && !isUserAuthenticated) {
+            handleAuthRequired("upload a resume");
+            return;
+        }
+
+        // Check if userId is available
+        if (!effectiveUserId) {
             setUploadError("User ID is required for upload");
             toast({
                 title: "❌ Upload Failed",
@@ -155,7 +204,7 @@ export default function PdfUpload({
         try {
             console.log("📤 Uploading PDF:", file.name);
 
-            const result = await uploadResume(file, userId);
+            const result = await uploadResume(file, effectiveUserId);
 
             clearInterval(progressInterval);
             setUploadProgress(100);
@@ -204,18 +253,25 @@ export default function PdfUpload({
                 });
             }
         }
-    }, [uploadResume, userId, onUploadSuccess, onUploadError, beforeUpload, afterUpload, toast, navigationParams]);
+    }, [uploadResume, effectiveUserId, requireAuth, isUserAuthenticated, onUploadSuccess, onUploadError, beforeUpload, afterUpload, toast, navigationParams, handleAuthRequired]);
 
     const handleFirstButtonClick = useCallback(() => {
+        // Check authentication if required
+        if (requireAuth && !isUserAuthenticated) {
+            handleAuthRequired("create a new resume");
+            return;
+        }
+
         if (onStartFromScratch) {
             onStartFromScratch();
         } else {
             navigateToEditor({
                 source: "scratch",
+                userId: effectiveUserId,
                 ...navigationParams,
             });
         }
-    }, [onStartFromScratch, navigationParams]);
+    }, [onStartFromScratch, navigationParams, requireAuth, isUserAuthenticated, handleAuthRequired, effectiveUserId]);
 
     const navigateToEditor = useCallback((params = {}) => {
         const queryString = new URLSearchParams(params).toString();
@@ -284,7 +340,13 @@ export default function PdfUpload({
                         </p>
                         <Button
                             variant="outline"
-                            onClick={() => document.getElementById("pdf-upload")?.click()}
+                            onClick={() => {
+                                if (requireAuth && !isUserAuthenticated) {
+                                    handleAuthRequired("upload a resume");
+                                } else {
+                                    document.getElementById("pdf-upload")?.click();
+                                }
+                            }}
                             disabled={isUploading}
                             className="border-gray-700 hover:border-gray-600"
                         >
@@ -406,7 +468,13 @@ export default function PdfUpload({
                         className={layout === 'grid' ? 'w-full' : ''}
                     >
                         <Button
-                            onClick={() => document.getElementById("pdf-upload")?.click()}
+                            onClick={() => {
+                                if (requireAuth && !isUserAuthenticated) {
+                                    handleAuthRequired("upload a resume");
+                                } else {
+                                    document.getElementById("pdf-upload")?.click();
+                                }
+                            }}
                             disabled={isUploading}
                             className={`
                                 flex items-center justify-center rounded-xl font-semibold

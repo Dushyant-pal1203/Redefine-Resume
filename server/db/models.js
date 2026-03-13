@@ -136,27 +136,12 @@ const Resume = sequelize.define(
     },
     portfolio_url: {
       type: DataTypes.STRING,
-      validate: {
-        isUrl: true,
-      },
     },
     linkedin_url: {
       type: DataTypes.STRING,
-      validate: {
-        isUrl: true,
-      },
     },
     github_url: {
       type: DataTypes.STRING,
-      validate: {
-        isUrl: true,
-      },
-    },
-    twitter_url: {
-      type: DataTypes.STRING,
-      validate: {
-        isUrl: true,
-      },
     },
     links: {
       type: DataTypes.JSONB,
