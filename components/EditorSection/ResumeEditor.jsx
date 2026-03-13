@@ -640,13 +640,17 @@ export default function ResumeEditor({
             setUnsavedChanges(true);
             pendingParentUpdate.current = true;
 
+            return newData;
+        });
+
+        // Move the toast outside of setFormData
+        // Use setTimeout to ensure it runs after render
+        setTimeout(() => {
             toast({
                 title: `✨ Added new ${section.slice(0, -1)}`,
                 description: "You can now fill in the details.",
             });
-
-            return newData;
-        });
+        }, 0);
     }, [toast]);
 
     const removeArrayItem = useCallback((section, index) => {
@@ -659,13 +663,16 @@ export default function ResumeEditor({
             setUnsavedChanges(true);
             pendingParentUpdate.current = true;
 
+            return newData;
+        });
+
+        // Move toast outside of setFormData
+        setTimeout(() => {
             toast({
                 title: "🗑️ Item removed",
                 description: "The item has been removed.",
             });
-
-            return newData;
-        });
+        }, 0);
     }, [toast]);
 
     const moveArrayItem = useCallback((section, fromIndex, toIndex) => {
@@ -766,7 +773,6 @@ export default function ResumeEditor({
         }
     }, [uploadResume, user, onPDFUpload, toast]);
 
-    // components/EditorSection/ResumeEditor.jsx - Focus on the handleSave function
 
     const handleSave = async () => {
         // Validate before saving
@@ -791,26 +797,18 @@ export default function ResumeEditor({
                 // Function to validate and clean URL
                 const cleanUrl = (url) => {
                     if (!url || url.trim() === '') return '';
-
-                    // Remove any whitespace
                     let cleaned = url.trim();
-
-                    // If it's already a valid URL, return it
                     try {
                         new URL(cleaned);
                         return cleaned;
                     } catch {
-                        // Not a valid URL, try to fix it
                         if (!cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
                             cleaned = 'https://' + cleaned;
                         }
-
-                        // Try again
                         try {
                             new URL(cleaned);
                             return cleaned;
                         } catch {
-                            // Still invalid, return empty string
                             return '';
                         }
                     }
@@ -838,6 +836,7 @@ export default function ResumeEditor({
                 }));
             }
 
+            // FIXED: Convert to old format using the updated function
             const oldFormatData = convertToOldFormat(cleanedFormData);
 
             // Remove any fields that might cause issues
@@ -850,7 +849,6 @@ export default function ResumeEditor({
                     try {
                         new URL(cleanData[field]);
                     } catch {
-                        // If invalid, set to empty string
                         cleanData[field] = '';
                     }
                 }
@@ -864,6 +862,17 @@ export default function ResumeEditor({
                     variant: "destructive",
                 });
                 return;
+            }
+
+            // FIXED: Ensure languages are properly formatted
+            // The convertToOldFormat already handles this, but double-check
+            if (!cleanData.languages) {
+                cleanData.languages = [];
+            }
+
+            // FIXED: Ensure skills are properly combined
+            if (!cleanData.skills) {
+                cleanData.skills = [];
             }
 
             const resumeToSave = {
@@ -899,7 +908,7 @@ export default function ResumeEditor({
         }
     };
 
-    // FIXED: Only one section expands at a time
+
     const toggleSection = useCallback((section) => {
         setExpandedSections(prev => {
             // If clicking on already expanded section, collapse it
@@ -1593,7 +1602,7 @@ export default function ResumeEditor({
                         </DynamicSection>
                     </Section>
 
-                    {/* Additional Sections (collapsed by default) */}
+                    {/* Certifications Sections */}
                     <Section
                         title="Certifications"
                         icon={Award}
@@ -1611,8 +1620,10 @@ export default function ResumeEditor({
                                 description: ''
                             })}
                             onRemove={(index) => removeArrayItem('certifications', index)}
+                            onMove={(from, to) => moveArrayItem('certifications', from, to)}
                             layout={layout}
-                            hideTitle
+                        // Remove hideTitle prop or set it to false to show the Add button
+                        // hideTitle={false} // This is the default, so you can remove it entirely
                         >
                             {(item, index) => (
                                 <div className="space-y-3">
@@ -1649,6 +1660,7 @@ export default function ResumeEditor({
                         </DynamicSection>
                     </Section>
 
+                    {/* Languages Section */}
                     <Section
                         title="Languages"
                         icon={Languages}
@@ -1662,8 +1674,10 @@ export default function ResumeEditor({
                                 proficiency: 'fluent'
                             })}
                             onRemove={(index) => removeArrayItem('languages', index)}
+                            onMove={(from, to) => moveArrayItem('languages', from, to)}
                             layout={layout}
-                            hideTitle
+                        // Remove hideTitle prop or set it to false
+                        // hideTitle={false} // This is the default, so you can remove it entirely
                         >
                             {(item, index) => (
                                 <div className="grid grid-cols-2 gap-4">
@@ -1672,7 +1686,7 @@ export default function ResumeEditor({
                                         value={item.language || ''}
                                         onChange={(e) => handleArrayChange('languages', index, 'language', e.target.value)}
                                         className={inputClasses}
-                                        placeholder="Language"
+                                        placeholder="e.g., English, Hindi"
                                     />
                                     <select
                                         value={item.proficiency || 'fluent'}
@@ -1681,7 +1695,7 @@ export default function ResumeEditor({
                                     >
                                         <option value="native">Native</option>
                                         <option value="fluent">Fluent</option>
-                                        <option value="professional">Professional</option>
+                                        <option value="professional">Professional Working</option>
                                         <option value="intermediate">Intermediate</option>
                                         <option value="basic">Basic</option>
                                     </select>

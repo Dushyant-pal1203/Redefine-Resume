@@ -78,7 +78,6 @@ const sanitizeResumeData = (data) => {
     "portfolio_url",
     "linkedin_url",
     "github_url",
-    "twitter_url",
     "professional_summary",
   ];
 
@@ -184,16 +183,16 @@ router.post("/resume", protect, (req, res) => {
       // Use direct SQL insert to bypass all validations
       const [result] = await Resume.sequelize.query(
         `INSERT INTO "Resumes" (
-          resume_id, user_id, resume_title, full_name, job_title, email, phone, location,
-          portfolio_url, linkedin_url, github_url, twitter_url, professional_summary,
-          skills, experience, education, projects, certifications, languages,
-          achievements, keywords, created_at, updated_at
-        ) VALUES (
-          :resume_id, :user_id, :resume_title, :full_name, :job_title, :email, :phone, :location,
-          :portfolio_url, :linkedin_url, :github_url, :twitter_url, :professional_summary,
-          :skills, :experience, :education, :projects, :certifications, :languages,
-          :achievements, :keywords, :created_at, :updated_at
-        ) RETURNING *`,
+    resume_id, user_id, resume_title, full_name, job_title, email, phone, location,
+    portfolio_url, linkedin_url, github_url, professional_summary,
+    skills, experience, education, projects, certifications, languages,
+    achievements, keywords, created_at, updated_at
+  ) VALUES (
+    :resume_id, :user_id, :resume_title, :full_name, :job_title, :email, :phone, :location,
+    :portfolio_url, :linkedin_url, :github_url, :professional_summary,
+    :skills, :experience, :education, :projects, :certifications, :languages,
+    :achievements, :keywords, :created_at, :updated_at
+  ) RETURNING *`,
         {
           replacements: {
             resume_id: resumeData.resume_id,
@@ -201,13 +200,13 @@ router.post("/resume", protect, (req, res) => {
             resume_title: resumeData.resume_title,
             full_name: resumeData.full_name || null,
             job_title: resumeData.job_title || null,
-            email: resumeData.email || null, // This can be null now
+            email: resumeData.email || null,
             phone: resumeData.phone || null,
             location: resumeData.location || null,
             portfolio_url: resumeData.portfolio_url || null,
             linkedin_url: resumeData.linkedin_url || null,
             github_url: resumeData.github_url || null,
-            twitter_url: resumeData.twitter_url || null,
+            // 👆 twitter_url removed from here
             professional_summary: resumeData.professional_summary || null,
             skills: JSON.stringify(resumeData.skills || []),
             experience: JSON.stringify(resumeData.experience || []),

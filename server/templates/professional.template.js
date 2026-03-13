@@ -1,4 +1,3 @@
-// templates/professional.template.js
 module.exports = `
 <!DOCTYPE html>
 <html>
@@ -8,15 +7,15 @@ module.exports = `
 <title>{{full_name}} - Professional Resume</title>
 
 <style>
-/* Reset and Base Styles */
+/* Reset and Base Styles - Modern Professional like second image */
 .resume-professional-wrapper {
   all: initial;
   display: block;
-  font-family: 'Times New Roman', 'Georgia', 'Palatino', serif;
-  color: #2c3e50;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #1e293b;
   line-height: 1.5;
-  background: #f8f9fa;
-  font-size: 10px;
+  background: #f1f5f9;
+  font-size: 10.5px;
 }
 
 .resume-professional-wrapper * {
@@ -25,144 +24,152 @@ module.exports = `
   padding: 0;
 }
 
-/* A4 Size Container */
+/* A4 Size Container - Clean white card */
 .resume-professional-wrapper .rp-container {
-  width: 210mm;
-  min-height: 297mm;
+  max-width: 900px;
   margin: 0 auto;
   background: white;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-  padding: 1mm 5mm;
-  position: relative;
-  page-break-after: always;
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.15);
+  padding: 30px 35px;
+  border-radius: 16px;
 }
 
-
-
-/* Responsive for smaller screens */
-@media screen and (max-width: 210mm) {
-  .resume-professional-wrapper .rp-container {
-    width: 100%;
-  }
-}
-
-/* Header - Classic Layout */
+/* Header - Modern minimal */
 .resume-professional-wrapper .rp-header {
-  text-align: center;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #2c3e50;
+  margin-bottom: 20px;
 }
 
 .resume-professional-wrapper .rp-name {
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
-  letter-spacing: 2px;
-  color: #1a2634;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  font-family: 'Times New Roman', serif;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin-bottom: 4px;
   line-height: 1.2;
 }
 
 .resume-professional-wrapper .rp-title {
-  font-size: 12px;
-  color: #4a5568;
-  margin-bottom: 2px;
-  font-style: italic;
-  letter-spacing: 0.5px;
-}
-.resume-professional-wrapper .rp-subtitle {
-  color: #black;
+  font-size: 18px;
+  font-weight: 500;
+  color: #334155;
   margin-bottom: 4px;
-  // font-style: italic;
-  letter-spacing: 0.5px;
 }
 
-/* Contact Bar */
+.resume-professional-wrapper .rp-subtitle {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 16px;
+  font-weight: 400;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+}
+
+/* Contact Bar - Modern flex layout */
 .resume-professional-wrapper .rp-contact-bar {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 4mm 6mm;
-  color: #4a5568;
-  margin-top: 3mm;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 3mm;
+  gap: 20px 28px;
+  background: #f8fafc;
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin: 8px 0 16px;
+  align-items: center;
 }
+
 .resume-professional-wrapper .rp-link-bar {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 2mm;
-  margin-top:5px;
+  gap: 16px;
+  margin-left: auto;
 }
 
 .resume-professional-wrapper .rp-contact-item {
   display: flex;
   align-items: center;
-  gap: 2mm;
+  gap: 6px;
+  font-size: 13px;
+  color: #1e293b;
 }
-.resume-professional-wrapper .rp-contact-item a{
-  color: black;
+
+.resume-professional-wrapper .rp-contact-item a {
+  color: #2563eb;
   text-decoration: none;
   font-weight: 500;
 }
 
-/* Two Column Layout */
+.resume-professional-wrapper .rp-contact-item a:hover {
+  text-decoration: underline;
+}
+
+/* Two Column Layout - Clean grid */
 .resume-professional-wrapper .rp-two-column {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 6mm;
-  margin-top: 4mm;
+  gap: 30px;
+  margin-top: 20px;
 }
 
 /* Left Column */
 .resume-professional-wrapper .rp-left-col {
-  border-right: 1px solid #e2e8f0;
-  padding-right: 5mm;
+  padding-right: 5px;
 }
 
-/* Section Titles - Classic Style */
+/* Section Titles - Modern minimal */
 .resume-professional-wrapper .rp-section-title {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  margin: 6mm 0 3mm;
-  color: #1a2634;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  border-bottom: 1px solid #cbd5e0;
-  padding-bottom: 1.5mm;
-  font-family: 'Times New Roman', serif;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+  margin: 20px 0 12px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 6px;
 }
 
 .resume-professional-wrapper .rp-section-title:first-of-type {
   margin-top: 0;
 }
 
-/* Contact Details */
-.resume-professional-wrapper .rp-contact-details {
-  margin: 3mm 0;
-}
-
-.resume-professional-wrapper .rp-contact-detail-item {
-  margin-bottom: 2mm;
-  display: flex;
-  align-items: center;
-  gap: 2mm;
-}
-
 /* Summary Text */
 .resume-professional-wrapper .rp-summary {
+  font-size: 13px;
   line-height: 1.6;
-  color: #4a5568;
-  margin: 3mm 0;
-  text-align: justify;
+  color: #334155;
+  margin: 8px 0;
+  text-align: left;
 }
 
-/* Experience Items */
+/* Skills - Modern tag style */
+.resume-professional-wrapper .rp-skills-group {
+  margin-bottom: 16px;
+}
+
+.resume-professional-wrapper .rp-skills-group h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1e293b;
+}
+
+.resume-professional-wrapper .rp-skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+}
+
+.resume-professional-wrapper .rp-skills-list li {
+  background: #f1f5f9;
+  color: #1e293b;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Experience Items - Clean cards */
 .resume-professional-wrapper .rp-experience-item {
-  margin-bottom: 5mm;
+  margin-bottom: 20px;
   page-break-inside: avoid;
 }
 
@@ -170,103 +177,67 @@ module.exports = `
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 1.5mm;
   flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .resume-professional-wrapper .rp-item-title {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
-  color: #2c3e50;
-}
-
-.resume-professional-wrapper .rp-item-subtitle {
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 1mm;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-item-company {
   font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 1mm;
+  color: #2563eb;
+  font-size: 13px;
+  margin-bottom: 2px;
 }
 
-.resume-professional-wrapper .rp-item-date {;
-  color: #718096;
-  font-style: italic;
+.resume-professional-wrapper .rp-item-date {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .resume-professional-wrapper .rp-item-location {
-  color: #718096;
-  margin-bottom: 2mm;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 6px;
 }
 
 .resume-professional-wrapper .rp-item-description {
-  color: #4a5568;
-  margin: 2mm 0;
+  font-size: 13px;
+  color: #334155;
+  margin: 6px 0;
   line-height: 1.5;
 }
 
 /* Achievement List */
 .resume-professional-wrapper .rp-achievement-list {
   list-style: none;
-  margin-top: 2mm;
+  margin-top: 6px;
 }
 
 .resume-professional-wrapper .rp-achievement-item {
-  margin-bottom: 1.5mm;
-  padding-left: 4mm;
+  font-size: 13px;
+  margin-bottom: 4px;
+  padding-left: 16px;
   position: relative;
-  color: #4a5568;
-  line-height: 1.5;
+  color: #334155;
 }
 
 .resume-professional-wrapper .rp-achievement-item::before {
   content: '•';
   position: absolute;
-  left: 1mm;
-  color: #2c3e50;
+  left: 4px;
+  color: #2563eb;
   font-weight: bold;
-}
-
-/* Skills Section */
-.resume-professional-wrapper .rp-skills-group {
-  margin-bottom: 4mm;
-  page-break-inside: avoid;
-}
-
-.resume-professional-wrapper .rp-skills-group h4 {
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 2mm;
-  color: #2c3e50;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.resume-professional-wrapper .rp-skills-list {
-  list-style: none;
-}
-
-.resume-professional-wrapper .rp-skills-list li {
-  margin-bottom: 1.5mm;
-  padding-left: 2px;
-  position: relative;
-  color: #4a5568;
-}
-
-.resume-professional-wrapper .rp-skills-list li::before {
-  content: '— ';
-  position: relative;
-  left: 0;
-  margin-right: 5px;
-  color: #718096;
 }
 
 /* Projects */
 .resume-professional-wrapper .rp-project-item {
-  margin-bottom: 4mm;
+  margin-bottom: 18px;
   page-break-inside: avoid;
 }
 
@@ -274,146 +245,173 @@ module.exports = `
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 1mm;
   flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .resume-professional-wrapper .rp-project-name {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-project-tech {
-  color: #718096;
-  font-style: italic;
-  margin-bottom: 1.5mm;
+  font-size: 12px;
+  color: #2563eb;
+  font-weight: 500;
+  margin-bottom: 6px;
 }
 
 .resume-professional-wrapper .rp-project-link {
-  margin-top: 1.5mm;
+  margin-top: 6px;
 }
 
 .resume-professional-wrapper .rp-project-link a {
-  color: #6699CC;
+  color: #2563eb;
   text-decoration: none;
-   font-weight: 500;
+  font-size: 12px;
+  font-weight: 500;
+  border-bottom: 1px dotted #94a3b8;
 }
 
 /* Education Items */
 .resume-professional-wrapper .rp-education-item {
-  margin-bottom: 4mm;
+  margin-bottom: 16px;
   page-break-inside: avoid;
 }
 
 .resume-professional-wrapper .rp-degree {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-school {
-  color: #4a5568;
-  font-weight: 600;
-  margin-bottom: 1mm;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2563eb;
+  margin-bottom: 2px;
 }
 
 .resume-professional-wrapper .rp-grade {
-  color: #718096;
-  margin-top: 1mm;
+  font-size: 12px;
+  color: #475569;
+  margin-top: 2px;
 }
 
-/* Certifications & Awards */
+/* Certifications & Awards - Modern compact */
 .resume-professional-wrapper .rp-cert-item,
 .resume-professional-wrapper .rp-award-item {
-  margin-bottom: 3mm;
+  margin-bottom: 12px;
   page-break-inside: avoid;
 }
 
 .resume-professional-wrapper .rp-cert-name,
 .resume-professional-wrapper .rp-award-name {
+  font-size: 13px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-cert-issuer,
 .resume-professional-wrapper .rp-award-desc {
-  color: #718096;
-  font-style: italic;
+  font-size: 12px;
+  color: #475569;
+  margin-top: 2px;
 }
 
-/* Languages */
+/* Languages - Clean two-column */
 .resume-professional-wrapper .rp-language-item {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 2mm;
-  border-bottom: 1px dotted #e2e8f0;
-  padding-bottom: 1.5mm;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .resume-professional-wrapper .rp-language-name {
+  font-size: 13px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-language-level {
-  color: #718096;
+  font-size: 12px;
+  color: #475569;
   font-style: italic;
+}
+
+/* Interests - Pill style */
+.resume-professional-wrapper .rp-interests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.resume-professional-wrapper .rp-interest-item {
+  background: #f1f5f9;
+  padding: 4px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 /* Publications */
 .resume-professional-wrapper .rp-publication-item {
-  margin-bottom: 3mm;
+  margin-bottom: 12px;
   page-break-inside: avoid;
 }
 
 .resume-professional-wrapper .rp-publication-title {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #2c3e50;
-  font-style: italic;
+  color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-publication-details {
-  color: #718096;
+  font-size: 12px;
+  color: #475569;
+  margin-top: 2px;
 }
 
-/* Interests */
-.resume-professional-wrapper .rp-interests {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2mm 3mm;
-  margin-top: 2mm;
+/* Volunteering */
+.resume-professional-wrapper .rp-volunteer-item {
+  margin-bottom: 16px;
 }
 
-.resume-professional-wrapper .rp-interest-item {
-  color: #4a5568;
-  position: relative;
-  padding-left: 3mm;
+.resume-professional-wrapper .rp-volunteer-org {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-.resume-professional-wrapper .rp-interest-item::before {
-  content: '▪';
-  position: absolute;
-  left: 0;
-  color: #2c3e50;
+.resume-professional-wrapper .rp-volunteer-role {
+  font-size: 12px;
+  color: #2563eb;
+  margin-bottom: 4px;
 }
 
 /* Footer */
 .resume-professional-wrapper .rp-footer {
-  margin-top: 6mm;
-  padding-top: 3mm;
+  margin-top: 25px;
+  padding-top: 15px;
   border-top: 1px solid #e2e8f0;
   text-align: center;
-  color: #a0aec0;
-  font-style: italic;
+  color: #64748b;
+  font-size: 12px;
 }
 
-/* Prevent orphans */
-.resume-professional-wrapper p, 
-.resume-professional-wrapper li {
-  orphans: 3;
-  widows: 3;
+/* Print optimization */
+@media print {
+  .resume-professional-wrapper {
+    background: white;
+  }
+  .resume-professional-wrapper .rp-container {
+    box-shadow: none;
+    padding: 15px 20px;
+  }
 }
 </style>
 </head>
@@ -425,33 +423,33 @@ module.exports = `
   <!-- Header -->
   <div class="rp-header">
     <div class="rp-name">{{full_name}}</div>
-    <div class="rp-title">{{#if job_title}}{{job_title}}{{/if}}</div>
-    <div class="rp-subtitle">{{#if headline}}{{headline}}{{/if}}</div>
+    <div class="rp-title">{{#if job_title}}{{job_title}}{{else}}Full Stack Developer{{/if}}</div>
+    <div class="rp-subtitle">{{#if headline}}{{headline}}{{else}}Passionate about creating efficient, scalable web applications with modern technologies{{/if}}</div>
 
-    <!-- Contact Details -->
+    <!-- Contact Bar -->
     <div class="rp-contact-bar">
       {{#if email}}<span class="rp-contact-item">✉️ {{email}}</span>{{/if}}
       {{#if phone}}<span class="rp-contact-item">📱 {{phone}}</span>{{/if}}
-      {{#if location}}<span class="rp-contact-item">🌍 {{location}}</span>{{/if}}
-    </div>
-   
+      {{#if location}}<span class="rp-contact-item">📍 {{location}}</span>{{/if}}
+      
       <div class="rp-link-bar">
-        {{#if portfolio_display}}
-        <div class="rp-contact-item">🌐<a href="{{portfolio_url}}" target="_blank" rel="noopener noreferrer">{{portfolio_display}}</a></div>
-        {{/if}}
         {{#if linkedin_display}}
-        <div class="rp-contact-item">🔗<a href="{{linkedin_url}}" target="_blank" rel="noopener noreferrer">{{linkedin_display}}</a></div>
+        <span class="rp-contact-item">🔗 <a href="{{linkedin_url}}" target="_blank">{{linkedin_display}}</a></span>
         {{/if}}
         {{#if github_display}}
-        <div class="rp-contact-item">💻<a href="{{github_url}}" target="_blank" rel="noopener noreferrer">{{github_display}}</a></div>
+        <span class="rp-contact-item">💻 <a href="{{github_url}}" target="_blank">{{github_display}}</a></span>
+        {{/if}}
+        {{#if portfolio_display}}
+        <span class="rp-contact-item">🌐 <a href="{{portfolio_url}}" target="_blank">{{portfolio_display}}</a></span>
         {{/if}}
       </div>
+    </div>
   </div>
 
   <!-- Two Column Layout -->
   <div class="rp-two-column">
     
-    <!-- Left Column -->
+    <!-- LEFT COLUMN -->
     <div class="rp-left-col">
       
       <!-- Professional Summary -->
@@ -460,29 +458,76 @@ module.exports = `
       <div class="rp-summary">{{professional_summary}}</div>
       {{/if}}
 
-      <!-- Skills -->
+      <!-- Skills Section -->
       <div class="rp-section-title">Skills</div>
       
-      {{#if skills.technical.length}}
+      <!-- Technical Skills -->
+      {{#if technical_skills.length}}
       <div class="rp-skills-group">
-        <h4>Technical</h4>
+        <h4>Technical Skills</h4>
         <ul class="rp-skills-list">
-          {{#each skills.technical}}
+          {{#each technical_skills}}
           <li>{{this}}</li>
           {{/each}}
         </ul>
       </div>
+      {{else}}
+        {{#if skills.technical.length}}
+        <div class="rp-skills-group">
+          <h4>Technical Skills</h4>
+          <ul class="rp-skills-list">
+            {{#each skills.technical}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/if}}
       {{/if}}
-      
-      {{#if skills.soft.length}}
+  
+      <!-- Soft Skills -->
+      {{#if soft_skills.length}}
       <div class="rp-skills-group">
         <h4>Soft Skills</h4>
         <ul class="rp-skills-list">
-          {{#each skills.soft}}
+          {{#each soft_skills}}
           <li>{{this}}</li>
           {{/each}}
         </ul>
       </div>
+      {{else}}
+        {{#if skills.soft.length}}
+        <div class="rp-skills-group">
+          <h4>Soft Skills</h4>
+          <ul class="rp-skills-list">
+            {{#each skills.soft}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/if}}
+      {{/if}}
+
+      <!-- Programming Languages -->
+      {{#if programming_languages.length}}
+      <div class="rp-skills-group">
+        <h4>Programming Languages</h4>
+        <ul class="rp-skills-list">
+          {{#each programming_languages}}
+          <li>{{this}}</li>
+          {{/each}}
+        </ul>
+      </div>
+      {{else}}
+        {{#if skills.languages.length}}
+        <div class="rp-skills-group">
+          <h4>Programming Languages</h4>
+          <ul class="rp-skills-list">
+            {{#each skills.languages}}
+            <li>{{this}}</li>
+            {{/each}}
+          </ul>
+        </div>
+        {{/if}}
       {{/if}}
 
       <!-- Languages -->
@@ -503,7 +548,7 @@ module.exports = `
       <div class="rp-cert-item">
         <div class="rp-cert-name">{{#if this.name}}{{this.name}}{{else}}{{this}}{{/if}}</div>
         {{#if this.issuer}}<div class="rp-cert-issuer">{{this.issuer}}</div>{{/if}}
-        {{#if this.date}}<div">{{this.date}}</div>{{/if}}
+        {{#if this.date}}<div class="rp-cert-issuer">{{this.date}}</div>{{/if}}
       </div>
       {{/each}}
       {{/if}}
@@ -517,9 +562,20 @@ module.exports = `
         {{/each}}
       </div>
       {{/if}}
+
+      <!-- Awards (if in left column) -->
+      {{#if awards.length}}
+      <div class="rp-section-title">Awards</div>
+      {{#each awards}}
+      <div class="rp-award-item">
+        <div class="rp-award-name">{{#if this.name}}{{this.name}}{{else}}{{this}}{{/if}}</div>
+        {{#if this.description}}<div class="rp-award-desc">{{this.description}}</div>{{/if}}
+      </div>
+      {{/each}}
+      {{/if}}
     </div>
 
-    <!-- Right Column -->
+    <!-- RIGHT COLUMN -->
     <div class="rp-right-col">
       
       <!-- Experience -->
@@ -560,9 +616,8 @@ module.exports = `
           {{/if}}
         </div>
         <div class="rp-school">{{#if this.institution}}{{this.institution}}{{else}}{{this.school}}{{/if}}</div>
-        {{#if this.location}}<div style=" color: #718096;">{{this.location}}</div>{{/if}}
+        {{#if this.location}}<div class="rp-item-location">{{this.location}}</div>{{/if}}
         {{#if this.grade}}<div class="rp-grade">GPA: {{this.grade}}</div>{{/if}}
-        {{#if this.description}}<div class="rp-item-description">{{this.description}}</div>{{/if}}
       </div>
       {{/each}}
       {{/if}}
@@ -580,26 +635,13 @@ module.exports = `
         </div>
         {{#if this.technologies.length}}
         <div class="rp-project-tech">
-          {{#each this.technologies}}
-            {{#if @first}}{{else}}, {{/if}}{{this}}
-          {{/each}}
+          {{#each this.technologies}}{{#if @index}}, {{/if}}{{this}}{{/each}}
         </div>
         {{/if}}
         <div class="rp-item-description">{{this.description}}</div>
         {{#if this.url}}
-        <div class="rp-project-link"><a href="{{this.url}}" target="_blank">🔗 View Project</a></div>
+        <div class="rp-project-link"><a href="{{this.url}}" target="_blank">View Project →</a></div>
         {{/if}}
-      </div>
-      {{/each}}
-      {{/if}}
-
-      <!-- Awards -->
-      {{#if awards.length}}
-      <div class="rp-section-title">Awards</div>
-      {{#each awards}}
-      <div class="rp-award-item">
-        <div class="rp-award-name">{{#if this.name}}{{this.name}}{{else}}{{this}}{{/if}}</div>
-        {{#if this.description}}<div class="rp-award-desc">{{this.description}}</div>{{/if}}
       </div>
       {{/each}}
       {{/if}}
@@ -620,22 +662,15 @@ module.exports = `
       {{#if volunteering.length}}
       <div class="rp-section-title">Volunteering</div>
       {{#each volunteering}}
-      <div class="rp-experience-item">
-        <div class="rp-item-subtitle">{{#if this.organization}}{{this.organization}}{{else}}{{this}}{{/if}}</div>
-        {{#if this.role}}<div class="rp-item-company">{{this.role}}</div>{{/if}}
+      <div class="rp-volunteer-item">
+        <div class="rp-volunteer-org">{{#if this.organization}}{{this.organization}}{{else}}{{this}}{{/if}}</div>
+        {{#if this.role}}<div class="rp-volunteer-role">{{this.role}}</div>{{/if}}
         {{#if this.description}}<div class="rp-item-description">{{this.description}}</div>{{/if}}
       </div>
       {{/each}}
       {{/if}}
     </div>
   </div>
-
-  <!-- Footer with Years of Experience -->
-  {{#if years_of_experience}}
-  <div class="rp-footer">
-    {{years_of_experience}}+ Years of Professional Experience
-  </div>
-  {{/if}}
 </div>
 </div>
 </body>

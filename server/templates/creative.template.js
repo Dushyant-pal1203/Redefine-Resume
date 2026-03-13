@@ -1,4 +1,3 @@
-// templates/creative.template.js
 module.exports = `
 <!DOCTYPE html>
 <html>
@@ -490,9 +489,21 @@ module.exports = `
           <span>⚡</span> Skills
         </div>
         
+        <!-- Technical Skills from direct array -->
+        {{#if technical_skills.length}}
+        <div style="margin-bottom: 5px;">
+          <h4 style="margin-bottom: 5px; color: #666;">Technical Skills</h4>
+          <div class="rc-skills-grid">
+            {{#each technical_skills}}
+            <span class="rc-skill-badge">{{this}}</span>
+            {{/each}}
+          </div>
+        </div>
+        {{else}}
+        <!-- Fallback to skills.technical if available -->
         {{#if skills.technical.length}}
         <div style="margin-bottom: 5px;">
-          <h4 style="margin-bottom: 5px; color: #666;">Technical</h4>
+          <h4 style="margin-bottom: 5px; color: #666;">Technical Skills</h4>
           <div class="rc-skills-grid">
             {{#each skills.technical}}
             <span class="rc-skill-badge">{{this}}</span>
@@ -500,12 +511,38 @@ module.exports = `
           </div>
         </div>
         {{/if}}
+        {{/if}}
         
+        <!-- Soft Skills from direct array -->
+        {{#if soft_skills.length}}
+        <div style="margin-bottom: 5px;">
+          <h4 style="margin-bottom: 5px; color: #666;">Soft Skills</h4>
+          <div class="rc-skills-grid">
+            {{#each soft_skills}}
+            <span class="rc-skill-badge">{{this}}</span>
+            {{/each}}
+          </div>
+        </div>
+        {{else}}
+        <!-- Fallback to skills.soft if available -->
         {{#if skills.soft.length}}
         <div style="margin-bottom: 5px;">
           <h4 style="margin-bottom: 5px; color: #666;">Soft Skills</h4>
           <div class="rc-skills-grid">
             {{#each skills.soft}}
+            <span class="rc-skill-badge">{{this}}</span>
+            {{/each}}
+          </div>
+        </div>
+        {{/if}}
+        {{/if}}
+        
+        <!-- Programming Languages from skills.languages -->
+        {{#if skills.languages.length}}
+        <div style="margin-bottom: 5px;">
+          <h4 style="margin-bottom: 5px; color: #666;">Programming Languages</h4>
+          <div class="rc-skills-grid">
+            {{#each skills.languages}}
             <span class="rc-skill-badge">{{this}}</span>
             {{/each}}
           </div>

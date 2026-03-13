@@ -252,9 +252,6 @@ export default function YourArtifacts() {
                                     secondButtonText="UPLOAD RESUME"
                                     firstButtonIcon={Sparkles}
                                     secondButtonIcon={FileUp}
-                                    onStartFromScratch={handleStartFromScratch}
-                                    onUploadSuccess={handleUploadSuccess}
-                                    onUploadError={handleUploadError}
                                     firstButtonClassName="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:shadow-2xl hover:shadow-purple-500/50 relative overflow-hidden group"
                                     secondButtonClassName="!bg-[#00f3ff1c] hover:!bg-[#00f3ff30] text-white border border-cyan-500/50"
                                     layout="horizontal"

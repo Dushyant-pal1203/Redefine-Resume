@@ -178,16 +178,16 @@ export function ResumeQuickActions({
                 hoverBorder: 'hover:border-green-500/30',
                 show: !hideActions.includes('duplicate')
             },
-            {
-                id: 'download',
-                icon: Download,
-                label: 'Download JSON',
-                onClick: handleDownloadJSON,
-                color: 'text-cyan-400',
-                hoverColor: 'hover:bg-cyan-500/10',
-                hoverBorder: 'hover:border-cyan-500/30',
-                show: !hideActions.includes('download')
-            },
+            // {
+            //     id: 'download',
+            //     icon: Download,
+            //     label: 'Download JSON',
+            //     onClick: handleDownloadJSON,
+            //     color: 'text-cyan-400',
+            //     hoverColor: 'hover:bg-cyan-500/10',
+            //     hoverBorder: 'hover:border-cyan-500/30',
+            //     show: !hideActions.includes('download')
+            // },
             {
                 id: 'share',
                 icon: Share2,
@@ -474,14 +474,14 @@ export function ResumeQuickActions({
                                 elementId="resume-preview-content"
                                 className="w-full border-gray-700 hover:border-gray-600"
                             />
-                            <Button
+                            {/* <Button
                                 variant="outline"
                                 onClick={handleDownloadJSON}
                                 className="border-gray-700 hover:border-gray-600"
                             >
                                 <FileJson className="w-4 h-4 mr-2" />
                                 JSON
-                            </Button>
+                            </Button> */}
                         </div>
                     </motion.div>
 

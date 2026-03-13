@@ -107,12 +107,7 @@ export function useResumes() {
         };
 
         // Validate all URL fields
-        const urlFields = [
-          "portfolio_url",
-          "linkedin_url",
-          "github_url",
-          "twitter_url",
-        ];
+        const urlFields = ["portfolio_url", "linkedin_url", "github_url"];
         for (const field of urlFields) {
           if (cleanedData[field] && !isValidUrl(cleanedData[field])) {
             // If invalid, remove it
@@ -235,12 +230,7 @@ export function useResumes() {
         };
 
         // Validate all URL fields
-        const urlFields = [
-          "portfolio_url",
-          "linkedin_url",
-          "github_url",
-          "twitter_url",
-        ];
+        const urlFields = ["portfolio_url", "linkedin_url", "github_url"];
         for (const field of urlFields) {
           if (cleanedData[field] && !isValidUrl(cleanedData[field])) {
             // If invalid, remove it
