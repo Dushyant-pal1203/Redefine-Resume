@@ -1,4 +1,3 @@
-// components/EditorSection/LivePreview.jsx
 'use client';
 
 import { useState, useEffect } from 'react';
