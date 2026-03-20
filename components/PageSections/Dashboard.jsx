@@ -51,10 +51,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function ResumeListPage() {
     const router = useRouter();
     const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { toast } = useToast();
     const {
         resumes,
         isLoading: resumesLoading,
@@ -212,7 +214,7 @@ export default function ResumeListPage() {
     const handleShareResume = (e, resume) => {
         e.stopPropagation();
         if (resume.is_public) {
-            const shareUrl = `${window.location.origin}/resume/${resume.id}`;
+            const shareUrl = `${window.location.origin}/preview/${resume.id}`;
             navigator.clipboard.writeText(shareUrl);
             toast({
                 title: "✅ Link Copied",
@@ -447,7 +449,7 @@ export default function ResumeListPage() {
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
+                                            <DropdownMenuContent align="end" className="bg-black">
                                                 <DropdownMenuItem onClick={(e) => handleEditResume(resume)}>
                                                     <FileText className="w-4 h-4 mr-2" />
                                                     Edit

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTemplates } from '@/hooks/use-templates';
 import Handlebars from 'handlebars';
 import { convertToFlexibleFormat } from '@/lib/resume-schema';
+import { useAuth } from '@/hooks/use-auth';
 
 // Enhanced print styles for better print output
 const printStyles = `
@@ -104,6 +105,7 @@ export default function PreviewPage() {
     const params = useParams();
     const router = useRouter();
     const { toast } = useToast();
+    const { user, isAuthenticated, isLoading: authLoading } = useAuth();
     const [resumeData, setResumeData] = useState(null);
     const [flexibleData, setFlexibleData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -280,6 +282,15 @@ export default function PreviewPage() {
     }, [flexibleData, templateHtml]);
 
     const handlePrint = useCallback(() => {
+        if (!isAuthenticated) {
+            toast({
+                title: "🔒 Authentication Required",
+                description: "Please log in to print resumes",
+                variant: "destructive",
+            });
+            return;
+        }
+
         if (!isContentReady || !contentRef.current) {
             toast({
                 title: "⚠️ Not Ready",
@@ -288,7 +299,7 @@ export default function PreviewPage() {
             return;
         }
         setShowPrintPreview(true);
-    }, [isContentReady, toast]);
+    }, [isContentReady, toast, isAuthenticated]);
 
     const handleActualPrint = useCallback(() => {
         try {
@@ -307,6 +318,18 @@ export default function PreviewPage() {
             });
         }
     }, [toast]);
+
+    const handleEdit = useCallback(() => {
+        if (!isAuthenticated) {
+            toast({
+                title: "🔒 Authentication Required",
+                description: "Please log in to edit resumes",
+                variant: "destructive",
+            });
+            return;
+        }
+        router.push(`/editor?resumeId=${resumeId}`);
+    }, [isAuthenticated, router, resumeId]);
 
     const prepareDataForTemplate = () => {
         if (!flexibleData) return null;
@@ -446,11 +469,17 @@ export default function PreviewPage() {
         });
     };
 
-    const handleEdit = () => {
-        router.push(`/editor?resumeId=${resumeId}`);
+    const handleLoginPrompt = () => {
+        toast({
+            title: "🔒 Authentication Required",
+            description: "Please log in to access this feature",
+            variant: "destructive",
+        });
+        // Optionally redirect to login page
+        router.push('/login');
     };
 
-    if (loading || templatesLoading) {
+    if (loading || templatesLoading || authLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
                 <motion.div
@@ -539,7 +568,12 @@ export default function PreviewPage() {
                                     <Button
                                         size="sm"
                                         onClick={handleActualPrint}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-2 sm:px-3"
+                                        disabled={!isAuthenticated}
+                                        className={`text-xs sm:text-sm px-2 sm:px-3 ${!isAuthenticated
+                                            ? 'bg-gray-400 cursor-not-allowed'
+                                            : 'bg-blue-600 hover:bg-blue-700'
+                                            }`}
+                                        title={!isAuthenticated ? "Login required to print" : ""}
                                     >
                                         <Printer className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                                         Print
@@ -613,16 +647,26 @@ export default function PreviewPage() {
                                 </Button>
                                 <Button
                                     variant="ghost"
-                                    onClick={handleEdit}
-                                    className="text-white/60 hover:text-white bg-white/5 hover:bg-white/10 justify-start"
+                                    onClick={isAuthenticated ? handleEdit : handleLoginPrompt}
+                                    disabled={!isAuthenticated}
+                                    className={`justify-start ${!isAuthenticated
+                                        ? 'text-gray-500 cursor-not-allowed bg-white/5'
+                                        : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10'
+                                        }`}
+                                    title={!isAuthenticated ? "Login required to edit" : ""}
                                 >
                                     <Edit className="w-4 h-4 mr-3" />
                                     Edit
                                 </Button>
                                 <Button
                                     variant="ghost"
-                                    onClick={handlePrint}
-                                    className="text-white/60 hover:text-white bg-white/5 hover:bg-white/10 justify-start"
+                                    onClick={isAuthenticated ? handlePrint : handleLoginPrompt}
+                                    disabled={!isAuthenticated}
+                                    className={`justify-start ${!isAuthenticated
+                                        ? 'text-gray-500 cursor-not-allowed bg-white/5'
+                                        : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10'
+                                        }`}
+                                    title={!isAuthenticated ? "Login required to print" : ""}
                                 >
                                     <Printer className="w-4 h-4 mr-3" />
                                     Print
@@ -676,15 +720,20 @@ export default function PreviewPage() {
 
                             {/* Action Buttons */}
                             {[
-                                { icon: Share2, action: handleCopyLink, label: 'Share' },
-                                { icon: Edit, action: handleEdit, label: 'Edit' },
-                                { icon: Printer, action: handlePrint, label: 'Print' }
-                            ].map(({ icon: Icon, action, label }) => (
-                                <motion.div key={label} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                { icon: Share2, action: handleCopyLink, label: 'Share', requiresAuth: false },
+                                { icon: Edit, action: isAuthenticated ? handleEdit : handleLoginPrompt, label: 'Edit', requiresAuth: true },
+                                { icon: Printer, action: isAuthenticated ? handlePrint : handleLoginPrompt, label: 'Print', requiresAuth: true }
+                            ].map(({ icon: Icon, action, label, requiresAuth }) => (
+                                <motion.div key={label} whileHover={{ scale: requiresAuth && !isAuthenticated ? 1 : 1.05 }} whileTap={{ scale: requiresAuth && !isAuthenticated ? 1 : 0.95 }}>
                                     <Button
                                         variant="ghost"
                                         onClick={action}
-                                        className="text-white/60 hover:text-white bg-white/5 hover:bg-white/10 px-3 lg:px-4 h-9 lg:h-10"
+                                        disabled={requiresAuth && !isAuthenticated}
+                                        className={`px-3 lg:px-4 h-9 lg:h-10 ${requiresAuth && !isAuthenticated
+                                            ? 'text-gray-500 cursor-not-allowed bg-white/5'
+                                            : 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10'
+                                            }`}
+                                        title={requiresAuth && !isAuthenticated ? "Login required" : ""}
                                     >
                                         <Icon className="w-3.5 h-3.5 lg:w-4 lg:h-4 lg:mr-2" />
                                         <span className="hidden lg:inline text-sm">{label}</span>
@@ -692,7 +741,7 @@ export default function PreviewPage() {
                                 </motion.div>
                             ))}
 
-                            {/* PDF Button */}
+                            {/* PDF Button - Always accessible */}
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <DownloadPDF
                                     ref={downloadRef}
@@ -813,8 +862,13 @@ export default function PreviewPage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleEdit}
-                            className="bg-white/5 hover:bg-white/10 text-white border-white/10 text-xs sm:text-sm"
+                            onClick={isAuthenticated ? handleEdit : handleLoginPrompt}
+                            disabled={!isAuthenticated}
+                            className={`text-xs sm:text-sm ${!isAuthenticated
+                                ? 'bg-white/5 text-gray-500 border-white/10 cursor-not-allowed'
+                                : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
+                                }`}
+                            title={!isAuthenticated ? "Login required to edit" : ""}
                         >
                             <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Edit
@@ -822,8 +876,13 @@ export default function PreviewPage() {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={handlePrint}
-                            className="bg-white/5 hover:bg-white/10 text-white border-white/10 text-xs sm:text-sm"
+                            onClick={isAuthenticated ? handlePrint : handleLoginPrompt}
+                            disabled={!isAuthenticated}
+                            className={`text-xs sm:text-sm ${!isAuthenticated
+                                ? 'bg-white/5 text-gray-500 border-white/10 cursor-not-allowed'
+                                : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
+                                }`}
+                            title={!isAuthenticated ? "Login required to print" : ""}
                         >
                             <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                             Preview
@@ -874,6 +933,24 @@ export default function PreviewPage() {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Authentication notice */}
+                            {!isAuthenticated && (
+                                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                    <p className="text-yellow-400 text-xs text-center">
+                                        🔒 Login required to edit or print resumes
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Welcome message for authenticated users */}
+                            {isAuthenticated && user && (
+                                <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                                    <p className="text-green-400 text-xs text-center">
+                                        👋 Welcome back, {user.name || user.email?.split('@')[0] || 'User'}! You can edit and print this resume.
+                                    </p>
+                                </div>
+                            )}
                         </motion.div>
                     )}
                 </motion.div>
