@@ -31,6 +31,16 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    avatar: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "URL or path to user avatar image",
+    },
+    avatar_public_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "Cloudinary public ID for avatar",
+    },
     role: {
       type: DataTypes.ENUM("user", "admin"),
       defaultValue: "user",
@@ -194,6 +204,36 @@ const Resume = sequelize.define(
         max: 100,
       },
     },
+    // ATS Score Fields
+    ats_score: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+        max: 100,
+      },
+      comment: "Overall ATS compatibility score",
+    },
+    ats_analysis: {
+      type: DataTypes.JSONB,
+      allowNull: true,
+      comment: "Complete ATS analysis data",
+    },
+    ats_analyzed_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: "Last ATS analysis timestamp",
+    },
+    ats_keywords_matched: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+      comment: "Keywords matched during ATS analysis",
+    },
+    ats_keywords_missing: {
+      type: DataTypes.JSONB,
+      defaultValue: [],
+      comment: "Keywords missing during ATS analysis",
+    },
     template: {
       type: DataTypes.STRING,
       defaultValue: "modern",
@@ -254,6 +294,9 @@ const Resume = sequelize.define(
       },
       {
         fields: ["template"],
+      },
+      {
+        fields: ["ats_score"],
       },
     ],
   },

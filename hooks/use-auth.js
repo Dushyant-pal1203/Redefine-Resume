@@ -6,6 +6,7 @@ import {
   createContext,
   useContext,
   useCallback,
+  useRef,
 } from "react";
 import Cookies from "js-cookie";
 import { useToast } from "./use-toast";
@@ -19,6 +20,9 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Use a ref to track if we've already checked auth to prevent multiple calls
+  const hasCheckedAuth = useRef(false);
 
   // Use try-catch to handle cases where toast might not be available
   let toast;
@@ -37,7 +41,10 @@ export function AuthProvider({ children }) {
 
   // Check authentication status on mount
   useEffect(() => {
-    checkAuth();
+    if (!hasCheckedAuth.current) {
+      checkAuth();
+      hasCheckedAuth.current = true;
+    }
   }, []);
 
   const checkAuth = useCallback(async () => {
@@ -71,7 +78,7 @@ export function AuthProvider({ children }) {
       } else {
         console.log("Auth check failed:", result.error);
         // Token invalid or expired
-        Cookies.remove("token");
+        Cookies.remove("token", { path: "/" });
         setIsAuthenticated(false);
         setUser(null);
       }

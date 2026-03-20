@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import ResumeEditor from '@/components/EditorSection/ResumeEditor';
 import LivePreview from '@/components/EditorSection/LivePreview';
+import FuturisticATSScore from '@/components/EditorSection/FuturisticATSScore';
 import { useCreateResume, useUpdateResume, useTogglePublicResume, useResume } from "@/hooks/use-resumes";
 import { useTemplates } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
@@ -415,6 +416,18 @@ function EditorContent() {
     const [isTemplateOpen, setIsTemplateOpen] = useState(false);
     const templateRef = useRef(null);
 
+
+    // ATSScore
+    const [isATSOpen, setIsATSOpen] = useState(false);
+    const handleOptimizeFromATS = useCallback(() => {
+        setIsATSOpen(false);
+        toast({
+            title: "✨ Optimization Started",
+            description: "We'll help you improve your ATS score.",
+            variant: "default",
+        });
+    }, [toast]);
+
     // Close dropdown on outside click
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -678,6 +691,19 @@ function EditorContent() {
                             >
                                 <Zap className="w-4 h-4" />
                             </Button>
+
+                            {/* ATS Score Button */}
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    onClick={() => setIsATSOpen(true)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 border-0 text-white shadow-lg shadow-purple-600/25"
+                                >
+                                    <Shield className="w-4 h-4 mr-2" />
+                                    ATS Score
+                                </Button>
+                            </motion.div>
 
                             {/* Save Button */}
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -986,6 +1012,19 @@ function EditorContent() {
                                             resumeData={resumeData} // Pass the current resume data
                                             className="p-4 flex-1 justify-center bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white"
                                         />
+
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setIsATSOpen(true);
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-purple-400"
+                                        >
+                                            <Shield className="w-3 h-3 mr-1" />
+                                            ATS Score
+                                        </Button>
                                     </div>
                                 </div>
                             </motion.div>
@@ -1121,6 +1160,14 @@ function EditorContent() {
                     }
                 }
             `}</style>
+
+            {/* ATS Score */}
+            <FuturisticATSScore
+                resumeData={resumeData}
+                isOpen={isATSOpen}
+                onClose={() => setIsATSOpen(false)}
+                resumeId={resumeId} // Add this prop
+            />
         </div>
     );
 }
