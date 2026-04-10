@@ -5,15 +5,83 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// List of available models in order of preference
+const AVAILABLE_MODELS = [
+  "gpt-4-turbo",
+  "gpt-4",
+  "gpt-4-1106-preview",
+  "gpt-3.5-turbo",
+  "gpt-3.5-turbo-16k",
+];
+
+// Cache for available models to avoid repeated checks
+let availableModelsCache = null;
+let lastModelCheck = 0;
+const MODEL_CHECK_INTERVAL = 3600000; // Check every hour
+
+/**
+ * Get available OpenAI models
+ */
+async function getAvailableModels() {
+  const now = Date.now();
+  if (availableModelsCache && now - lastModelCheck < MODEL_CHECK_INTERVAL) {
+    return availableModelsCache;
+  }
+
+  try {
+    const response = await openai.models.list();
+    const models = response.data.map((model) => model.id);
+    availableModelsCache = models;
+    lastModelCheck = now;
+    console.log(
+      `📋 Available OpenAI models: ${models.filter((m) => m.includes("gpt")).join(", ")}`,
+    );
+    return models;
+  } catch (error) {
+    console.warn("⚠️ Could not fetch model list:", error.message);
+    return AVAILABLE_MODELS;
+  }
+}
+
+/**
+ * Get the best available model
+ */
+async function getBestAvailableModel() {
+  const availableModels = await getAvailableModels();
+
+  for (const preferred of AVAILABLE_MODELS) {
+    if (availableModels.includes(preferred)) {
+      console.log(`✅ Using OpenAI model: ${preferred}`);
+      return preferred;
+    }
+  }
+
+  // Fallback to gpt-3.5-turbo (most likely available)
+  console.log("⚠️ Using fallback model: gpt-3.5-turbo");
+  return "gpt-3.5-turbo";
+}
+
 /**
  * Analyze resume with OpenAI
  */
 async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
+  // Check if OpenAI API key is configured
+  if (
+    !process.env.OPENAI_API_KEY ||
+    process.env.OPENAI_API_KEY === "your-openai-api-key-here"
+  ) {
+    console.log("⚠️ OpenAI API key not configured, using local analysis");
+    throw new Error("OpenAI API key not configured");
+  }
+
   try {
     const prompt = buildResumeAnalysisPrompt(resumeData, jobDescription);
+    const model = await getBestAvailableModel();
+
+    console.log(`🤖 Sending to OpenAI with model: ${model}`);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo-preview",
+      model: model,
       messages: [
         {
           role: "system",
@@ -31,9 +99,50 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
     });
 
     const analysis = JSON.parse(response.choices[0].message.content);
+    console.log("✅ OpenAI Analysis Complete");
     return analysis;
   } catch (error) {
     console.error("OpenAI Analysis Error:", error);
+
+    // Handle specific error cases
+    if (error.code === "insufficient_quota") {
+      console.error(
+        "❌ OpenAI API quota exceeded. Please check your billing details.",
+      );
+    } else if (error.code === "model_not_found") {
+      console.error("❌ Model not available. Trying fallback models...");
+      // Try with a different model
+      try {
+        const fallbackModel = "gpt-3.5-turbo";
+        console.log(`🔄 Retrying with fallback model: ${fallbackModel}`);
+
+        const prompt = buildResumeAnalysisPrompt(resumeData, jobDescription);
+        const response = await openai.chat.completions.create({
+          model: fallbackModel,
+          messages: [
+            {
+              role: "system",
+              content: `You are an elite ATS analyst. Analyze resumes professionally.`,
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.8,
+          max_tokens: 2500,
+          response_format: { type: "json_object" },
+        });
+
+        const analysis = JSON.parse(response.choices[0].message.content);
+        console.log("✅ Fallback OpenAI Analysis Complete");
+        return analysis;
+      } catch (fallbackError) {
+        console.error("❌ Fallback OpenAI also failed:", fallbackError.message);
+        throw fallbackError;
+      }
+    }
+
     throw error;
   }
 }
@@ -42,6 +151,8 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
  * Generate local fallback analysis
  */
 function generateLocalAnalysis(resumeData, jobDescription = "") {
+  console.log("🔧 Generating local analysis...");
+
   // Extract basic info
   const hasName = !!resumeData.personal?.full_name;
   const hasEmail = !!resumeData.personal?.email;
@@ -209,7 +320,7 @@ async function analyzeResume(resumeData, jobDescription = "") {
 
     // Add metadata
     openAIAnalysis.analyzed_at = new Date().toISOString();
-    openAIAnalysis.model_used = "GPT-4 Turbo";
+    openAIAnalysis.model_used = "GPT-4";
     openAIAnalysis.confidence_score = calculateConfidenceScore(openAIAnalysis);
 
     return {
@@ -237,7 +348,7 @@ async function analyzeResume(resumeData, jobDescription = "") {
   }
 }
 
-// Helper functions (same as in your local-analyzer.js)
+// Helper functions
 function calculateScore(maxScore, conditions) {
   const trueCount = conditions.filter(Boolean).length;
   return Math.min(
@@ -334,7 +445,7 @@ function calculateTemporalRelevance(resumeData) {
 
   resumeData.experience?.forEach((exp) => {
     if (exp.current) score += 15;
-    if (exp.endDate?.includes(currentYear.toString())) score += 10;
+    if (exp.end_date?.includes(currentYear.toString())) score += 10;
   });
 
   return Math.min(100, score);
@@ -370,8 +481,8 @@ function generateRecommendations(resumeData) {
     recs.push("Add a compelling professional summary");
   }
 
-  if (!resumeData.skills?.technical?.length) {
-    recs.push("List your technical skills");
+  if ((resumeData.skills?.technical?.length || 0) < 3) {
+    recs.push("List more technical skills");
   }
 
   if (resumeData.experience?.length < 2) {
@@ -512,8 +623,8 @@ function identifyWeaknesses(resumeData) {
     weaknesses.push("Lack of quantifiable achievements");
   }
 
-  if (!resumeData.skills?.technical?.length) {
-    weaknesses.push("No technical skills listed");
+  if ((resumeData.skills?.technical?.length || 0) < 3) {
+    weaknesses.push("Limited technical skills listed");
   }
 
   return weaknesses.length ? weaknesses : ["Areas for improvement identified"];
@@ -550,7 +661,7 @@ function calculateFutureIndex(resumeData) {
     index += 20;
   }
 
-  if (resumeData.skills?.technical?.length > 10) {
+  if ((resumeData.skills?.technical?.length || 0) > 10) {
     index += 10;
   }
 
