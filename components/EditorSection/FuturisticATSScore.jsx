@@ -85,6 +85,7 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
         let particles = [];
+        let animationFrameId = null;
 
         const resizeCanvas = () => {
             canvas.width = window.innerWidth;
@@ -92,7 +93,6 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
         };
 
         const createParticles = () => {
-            // Reduce particles on mobile for performance
             const particleCount = isMobile ? 20 : 50;
             particles = [];
             for (let i = 0; i < particleCount; i++) {
@@ -108,6 +108,8 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
         };
 
         const drawParticles = () => {
+            if (!ctx || !canvas) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Draw grid lines (reduce on mobile)
@@ -148,7 +150,7 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
                 if (p.y > canvas.height) p.y = 0;
             });
 
-            animationRef.current = requestAnimationFrame(drawParticles);
+            animationFrameId = requestAnimationFrame(drawParticles);
         };
 
         resizeCanvas();
@@ -159,8 +161,8 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
 
         return () => {
             window.removeEventListener('resize', resizeCanvas);
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
             }
         };
     }, [isOpen, isMobile]);
@@ -247,7 +249,7 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
                         <canvas
                             ref={canvasRef}
                             className="absolute inset-0 w-full h-full"
-                            style={{ background: 'linear-linear(135deg, #0f0c1f 0%, #1a1035 50%, #0f0c1f 100%)' }}
+                            style={{ background: 'linear-gradient(135deg, #0f0c1f 0%, #1a1035 50%, #0f0c1f 100%)' }}
                         />
                     </motion.div>
 
@@ -275,14 +277,11 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
 
                             <div className="relative h-full flex items-center justify-between px-3 md:px-6">
                                 <div className="flex items-center gap-2 md:gap-4 min-w-0">
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                        className="relative shrink-0"
-                                    >
+                                    {/* FIXED: Changed infinite animation to use CSS animation instead */}
+                                    <div className="relative shrink-0 animate-spin-slow">
                                         <div className="absolute inset-0 bg-purple-500 blur-xl opacity-50" />
                                         <Atom className={`${isLandscape ? 'w-5 h-5' : isMobile ? 'w-6 h-6' : 'w-8 h-8'} text-purple-400 relative z-10`} />
-                                    </motion.div>
+                                    </div>
                                     <div className="min-w-0">
                                         <h1 className={`font-bold bg-linear-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent truncate
                                             ${isLandscape ? 'text-base' : isMobile ? 'text-lg' : 'text-2xl'}`}>
@@ -403,15 +402,12 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
                             {isAnalyzing ? (
                                 <div className="flex flex-col items-center justify-center h-full px-4">
                                     <div className="relative">
-                                        <motion.div
-                                            animate={{ rotate: 360 }}
-                                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                            className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'}`}
-                                        >
+                                        {/* FIXED: Changed infinite animation to use CSS animation */}
+                                        <div className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'} animate-spin-slow`}>
                                             <div className="absolute inset-0 border-4 border-purple-500/30 border-t-purple-500 rounded-full" />
                                             <div className="absolute inset-2 border-4 border-blue-500/30 border-b-blue-500 rounded-full" />
                                             <div className="absolute inset-4 border-4 border-cyan-500/30 border-l-cyan-500 rounded-full" />
-                                        </motion.div>
+                                        </div>
                                         <Brain className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-5 h-5' : 'w-8 h-8'} text-purple-400`} />
                                     </div>
                                     <h3 className={`font-bold text-white mt-4 md:mt-6 text-center ${isMobile ? 'text-base' : 'text-xl'}`}>
@@ -467,17 +463,6 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
                                                         </div>
                                                         <div className="relative self-end xs:self-auto">
                                                             <Gauge className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'} text-purple-500/30`} />
-                                                            <motion.div
-                                                                initial={{ rotate: -90 }}
-                                                                animate={{ rotate: -90 + (analysis.quantum_score?.overall || 0) * 1.8 }}
-                                                                transition={{ duration: 1.5, ease: "easeOut" }}
-                                                                className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 border-4 border-purple-500 rounded-full
-                                                                    ${isMobile ? 'w-10 h-10 border-2' : 'w-16 h-16'}`}
-                                                                style={{
-                                                                    clipPath: 'polygon(50% 0%, 50% 50%, 100% 50%, 100% 0%)',
-                                                                    transformOrigin: 'center',
-                                                                }}
-                                                            />
                                                         </div>
                                                     </div>
 
@@ -801,7 +786,7 @@ export default function FuturisticATSScore({ resumeData, isOpen, onClose, resume
     );
 }
 
-// Add custom scrollbar styles
+// Add custom scrollbar styles and CSS animations
 if (typeof document !== 'undefined') {
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
@@ -821,12 +806,26 @@ if (typeof document !== 'undefined') {
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: linear-linear(180deg, #9333ea, #3b82f6);
+            background: linear-gradient(180deg, #9333ea, #3b82f6);
             border-radius: 3px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: linear-linear(180deg, #a855f7, #60a5fa);
+            background: linear-gradient(180deg, #a855f7, #60a5fa);
+        }
+
+        /* CSS animations to replace Framer Motion infinite animations */
+        @keyframes spin-slow {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin-slow {
+            animation: spin-slow 20s linear infinite;
         }
 
         /* Mobile touch optimizations */

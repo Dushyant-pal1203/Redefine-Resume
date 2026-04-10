@@ -2,8 +2,6 @@
 const pdf2json = require("pdf2json");
 
 async function parsePDFSimple(buffer) {
-  console.log("🔍 Starting simple PDF parsing...");
-
   return new Promise((resolve, reject) => {
     const pdfParser = new pdf2json(null, 1);
     let extractedText = "";
@@ -21,12 +19,8 @@ async function parsePDFSimple(buffer) {
 
     pdfParser.on("pdfParser_dataReady", (pdfData) => {
       try {
-        console.log("📊 PDF parsed successfully");
-
         if (pdfData.Pages && pdfData.Pages.length > 0) {
           pdfData.Pages.forEach((page, pageIndex) => {
-            console.log(`📄 Processing page ${pageIndex + 1}`);
-
             if (page.Texts && page.Texts.length > 0) {
               // Sort texts by Y position to maintain reading order
               const sortedTexts = [...page.Texts].sort(
@@ -47,15 +41,12 @@ async function parsePDFSimple(buffer) {
                     });
                   }
                 } catch (e) {
-                  console.log(`⚠️ Failed to decode text`);
+                  // Silently fail for individual text blocks
                 }
               });
             }
           });
         }
-
-        console.log(`📝 Extracted ${allTexts.length} text blocks`);
-        console.log(`📝 Total extracted text length: ${extractedText.length}`);
 
         if (extractedText.length === 0) {
           reject(
@@ -65,9 +56,6 @@ async function parsePDFSimple(buffer) {
           );
           return;
         }
-
-        // Show first 500 characters for debugging
-        console.log("📝 Text preview:", extractedText.substring(0, 500));
 
         // Parse the extracted text
         const parsedData = parseTextToResumeImproved(
@@ -88,8 +76,6 @@ async function parsePDFSimple(buffer) {
 }
 
 function parseTextToResumeImproved(fullText, allTexts, textWithPositions) {
-  console.log("🔍 Parsing text to resume structure...");
-
   // Clean the text
   let cleanText = fullText.replace(/\s+/g, " ").trim();
 
@@ -102,9 +88,6 @@ function parseTextToResumeImproved(fullText, allTexts, textWithPositions) {
     .split(/[.!?]\s+|\n/)
     .filter((l) => l.trim().length > 0);
 
-  console.log(`📄 Split into ${lines.length} lines/sentences`);
-  console.log("📄 First 10 lines:", lines.slice(0, 10));
-
   // Extract information with improved methods
   const fullName = extractNameImproved(cleanText, lines, allTexts);
   const email = extractEmailImproved(cleanText);
@@ -115,17 +98,6 @@ function parseTextToResumeImproved(fullText, allTexts, textWithPositions) {
   const skills = extractSkillsImproved(cleanText, lines);
   const experience = extractExperienceImproved(cleanText, lines);
   const education = extractEducationImproved(cleanText, lines);
-
-  console.log("✅ Parsing complete:", {
-    name: fullName || "Not found",
-    email: email || "Not found",
-    phone: phone || "Not found",
-    jobTitle: jobTitle || "Not found",
-    location: location || "Not found",
-    skillsCount: skills.length,
-    experienceCount: experience.length,
-    educationCount: education.length,
-  });
 
   return {
     full_name: fullName,

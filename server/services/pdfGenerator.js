@@ -157,11 +157,6 @@ class PDFGenerator {
   }
 
   prepareDataForTemplate(resumeData) {
-    console.log(
-      "📊 Preparing data for template:",
-      JSON.stringify(resumeData, null, 2).substring(0, 500) + "...",
-    );
-
     let data = { ...resumeData };
 
     // Handle the flexible format (personal, summary, skills objects)
@@ -416,7 +411,6 @@ class PDFGenerator {
       }),
     };
 
-    console.log("✅ Data prepared successfully");
     return preparedData;
   }
 
@@ -425,8 +419,6 @@ class PDFGenerator {
     let page = null;
 
     try {
-      console.log(`📄 Generating PDF with template: ${template}`);
-
       // Get template HTML
       const templateHtml = this.getTemplate(template);
       if (!templateHtml) {
@@ -559,10 +551,6 @@ class PDFGenerator {
         preferCSSPageSize: true,
       });
 
-      console.log(
-        `✅ PDF generated successfully (${(pdfBuffer.length / 1024).toFixed(2)} KB)`,
-      );
-
       return pdfBuffer;
     } catch (error) {
       console.error("❌ PDF Generation Error:", error);
@@ -576,7 +564,6 @@ class PDFGenerator {
     try {
       const pdfBuffer = await this.generatePDF(resumeData, template);
       await fs.writeFile(outputPath, pdfBuffer);
-      console.log(`✅ PDF saved to: ${outputPath}`);
       return outputPath;
     } catch (error) {
       console.error("❌ Error saving PDF:", error);
@@ -588,7 +575,6 @@ class PDFGenerator {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
-      console.log("🔄 Browser closed");
     }
   }
 

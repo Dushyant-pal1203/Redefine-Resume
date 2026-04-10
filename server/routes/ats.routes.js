@@ -11,7 +11,7 @@ const { NotFoundError, ValidationError } = require("../utils/errors");
  * @desc    Analyze a resume and get ATS score
  * @access  Private
  */
-router.post("/analyze", protect, async (req, res, next) => {
+router.post("/analyze", async (req, res, next) => {
   try {
     const { resumeData, jobDescription, resumeId } = req.body;
 
@@ -19,33 +19,47 @@ router.post("/analyze", protect, async (req, res, next) => {
       throw new ValidationError("Resume data is required");
     }
 
+    // Try to get user from token if available, but don't require it
+    let user = null;
+    try {
+      if (req.headers.authorization) {
+        const token = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        user = decoded;
+      }
+    } catch (authError) {
+      // Auth optional, continuing without user
+    }
+
     // Perform analysis
     const result = await analyzeResume(resumeData, jobDescription);
 
-    // If resumeId is provided, save the analysis to the resume
-    if (resumeId) {
-      const resume = await Resume.findOne({
-        where: {
-          resume_id: resumeId,
-          user_id: req.user.id,
-        },
-      });
-
-      if (resume) {
-        // Extract keywords for storage
-        const detectedKeywords =
-          result.analysis.keyword_frequency_domain?.detected_patterns || [];
-        const missingKeywords =
-          result.analysis.keyword_frequency_domain?.missing_patterns || [];
-
-        // Update resume with ATS data
-        await resume.update({
-          ats_score: result.analysis.quantum_score?.overall || null,
-          ats_analysis: result.analysis,
-          ats_analyzed_at: new Date(),
-          ats_keywords_matched: detectedKeywords,
-          ats_keywords_missing: missingKeywords,
+    // If resumeId is provided and we have a user, save the analysis
+    if (resumeId && user) {
+      try {
+        const resume = await Resume.findOne({
+          where: {
+            resume_id: resumeId,
+            user_id: user.id,
+          },
         });
+
+        if (resume) {
+          const detectedKeywords =
+            result.analysis.keyword_frequency_domain?.detected_patterns || [];
+          const missingKeywords =
+            result.analysis.keyword_frequency_domain?.missing_patterns || [];
+
+          await resume.update({
+            ats_score: result.analysis.quantum_score?.overall || null,
+            ats_analysis: result.analysis,
+            ats_analyzed_at: new Date(),
+            ats_keywords_matched: detectedKeywords,
+            ats_keywords_missing: missingKeywords,
+          });
+        }
+      } catch (dbError) {
+        // Don't fail the request if saving fails
       }
     }
 

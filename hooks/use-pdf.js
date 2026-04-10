@@ -30,8 +30,6 @@ export function usePDF() {
 
         // If resumeData is provided, use the new endpoint
         if (resumeData) {
-          console.log("📄 Generating PDF with provided data");
-
           // Ensure we're sending the complete data structure
           const payload = {
             resumeData: resumeData,
@@ -238,14 +236,9 @@ export function usePDF() {
         window.URL.revokeObjectURL(url);
       }, 100);
 
-      toast({
-        title: "✅ Success",
-        description: "PDF downloaded successfully",
-      });
-
       return true;
     },
-    [generatePDF, toast],
+    [generatePDF],
   );
 
   return {

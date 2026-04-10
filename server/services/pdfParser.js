@@ -9,12 +9,8 @@ const openai = new OpenAI({
 
 async function parsePDF(buffer) {
   try {
-    console.log("🔍 Starting PDF parsing...");
-
     const data = await pdfParse(buffer);
-
     const text = cleanText(data.text);
-
     const lines = text
       .split("\n")
       .map((l) => l.trim())
@@ -34,8 +30,6 @@ async function parsePDF(buffer) {
 
     // 🔥 Merge (AI wins if exists)
     const finalData = mergeData(ruleBased, aiData);
-
-    console.log("✅ AI Parsing Complete");
 
     return finalData;
   } catch (error) {
@@ -59,8 +53,6 @@ function cleanText(text) {
 
 async function aiParseResume(text) {
   try {
-    console.log("🤖 Sending to AI...");
-
     const prompt = `
 Extract structured JSON from this resume.
 

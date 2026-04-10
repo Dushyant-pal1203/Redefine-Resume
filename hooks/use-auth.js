@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
     // Toast not available yet, create a dummy toast function
     toast = {
       toast: ({ title, description, variant }) => {
-        console.log("Toast:", { title, description, variant });
+        // Silent fallback
       },
     };
   }
@@ -52,8 +52,6 @@ export function AuthProvider({ children }) {
       setIsLoading(true);
       const token = Cookies.get("token");
 
-      console.log("Checking auth, token exists:", !!token);
-
       if (!token) {
         setIsAuthenticated(false);
         setUser(null);
@@ -72,11 +70,9 @@ export function AuthProvider({ children }) {
       const result = await response.json();
 
       if (result.success) {
-        console.log("Auth check successful:", result.data);
         setUser(result.data);
         setIsAuthenticated(true);
       } else {
-        console.log("Auth check failed:", result.error);
         // Token invalid or expired
         Cookies.remove("token", { path: "/" });
         setIsAuthenticated(false);
