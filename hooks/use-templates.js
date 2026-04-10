@@ -17,19 +17,12 @@ export function useTemplates() {
       setError(null);
 
       const url = `${API_BASE_URL}/api/templates`;
-      console.log("Fetching templates from:", url);
-
-      // Try both ports to debug
-      console.log("Trying port 5001 (from .env)...");
 
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
         },
       });
-
-      console.log("Response status:", response.status);
-      console.log("Response OK?", response.ok);
 
       if (!response.ok) {
         // Try to get error details
@@ -41,7 +34,6 @@ export function useTemplates() {
       }
 
       const result = await response.json();
-      console.log("Templates response:", result);
 
       if (result.success) {
         setTemplates(result.data);
@@ -165,8 +157,6 @@ export function useTemplate(templateId) {
         setIsLoading(true);
         setError(null);
 
-        console.log("Fetching template:", templateId);
-
         const response = await fetch(
           `${API_BASE_URL}/api/templates/${templateId}`,
           {
@@ -181,7 +171,6 @@ export function useTemplate(templateId) {
         }
 
         const result = await response.json();
-        console.log("Template response:", result);
 
         if (result.success) {
           setTemplate(result.data);

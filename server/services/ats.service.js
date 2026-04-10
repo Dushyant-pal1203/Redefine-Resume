@@ -33,9 +33,6 @@ async function getAvailableModels() {
     const models = response.data.map((model) => model.id);
     availableModelsCache = models;
     lastModelCheck = now;
-    console.log(
-      `📋 Available OpenAI models: ${models.filter((m) => m.includes("gpt")).join(", ")}`,
-    );
     return models;
   } catch (error) {
     console.warn("⚠️ Could not fetch model list:", error.message);
@@ -51,13 +48,11 @@ async function getBestAvailableModel() {
 
   for (const preferred of AVAILABLE_MODELS) {
     if (availableModels.includes(preferred)) {
-      console.log(`✅ Using OpenAI model: ${preferred}`);
       return preferred;
     }
   }
 
   // Fallback to gpt-3.5-turbo (most likely available)
-  console.log("⚠️ Using fallback model: gpt-3.5-turbo");
   return "gpt-3.5-turbo";
 }
 
@@ -70,15 +65,12 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
     !process.env.OPENAI_API_KEY ||
     process.env.OPENAI_API_KEY === "your-openai-api-key-here"
   ) {
-    console.log("⚠️ OpenAI API key not configured, using local analysis");
     throw new Error("OpenAI API key not configured");
   }
 
   try {
     const prompt = buildResumeAnalysisPrompt(resumeData, jobDescription);
     const model = await getBestAvailableModel();
-
-    console.log(`🤖 Sending to OpenAI with model: ${model}`);
 
     const response = await openai.chat.completions.create({
       model: model,
@@ -99,22 +91,17 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
     });
 
     const analysis = JSON.parse(response.choices[0].message.content);
-    console.log("✅ OpenAI Analysis Complete");
     return analysis;
   } catch (error) {
-    console.error("OpenAI Analysis Error:", error);
-
     // Handle specific error cases
     if (error.code === "insufficient_quota") {
       console.error(
         "❌ OpenAI API quota exceeded. Please check your billing details.",
       );
     } else if (error.code === "model_not_found") {
-      console.error("❌ Model not available. Trying fallback models...");
       // Try with a different model
       try {
         const fallbackModel = "gpt-3.5-turbo";
-        console.log(`🔄 Retrying with fallback model: ${fallbackModel}`);
 
         const prompt = buildResumeAnalysisPrompt(resumeData, jobDescription);
         const response = await openai.chat.completions.create({
@@ -135,7 +122,6 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
         });
 
         const analysis = JSON.parse(response.choices[0].message.content);
-        console.log("✅ Fallback OpenAI Analysis Complete");
         return analysis;
       } catch (fallbackError) {
         console.error("❌ Fallback OpenAI also failed:", fallbackError.message);
@@ -151,8 +137,6 @@ async function analyzeResumeWithOpenAI(resumeData, jobDescription = "") {
  * Generate local fallback analysis
  */
 function generateLocalAnalysis(resumeData, jobDescription = "") {
-  console.log("🔧 Generating local analysis...");
-
   // Extract basic info
   const hasName = !!resumeData.personal?.full_name;
   const hasEmail = !!resumeData.personal?.email;
@@ -329,8 +313,6 @@ async function analyzeResume(resumeData, jobDescription = "") {
       source: "openai",
     };
   } catch (openaiError) {
-    console.error("OpenAI failed, using local analysis:", openaiError.message);
-
     // Fall back to local analysis
     const localAnalysis = generateLocalAnalysis(resumeData, jobDescription);
 

@@ -30,9 +30,6 @@ const avatarsPath = path.join(uploadsPath, "avatars");
 if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath, { recursive: true });
 if (!fs.existsSync(avatarsPath)) fs.mkdirSync(avatarsPath, { recursive: true });
 
-// console.log("📁 Uploads directory:", uploadsPath);
-// console.log("📁 Avatars directory:", avatarsPath);
-
 // Security middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 

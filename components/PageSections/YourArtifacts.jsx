@@ -137,7 +137,7 @@ export default function YourArtifacts() {
         <>
             {!isAuthenticated ? (
                 // Unauthenticated view
-                <section id="artifacts" className="py-20 px-6 min-h-screen flex items-center">
+                <section id="artifacts" className="py-20 px-6 min-h-screen flex items-center bg-[#0000006b]">
                     <div className="container mx-auto max-w-7xl">
                         <Header />
                         <div className="mt-4 text-center p-16 max-w-7xl mx-auto bg-[#00000060] rounded-4xl">

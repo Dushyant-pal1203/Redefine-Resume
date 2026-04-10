@@ -23,7 +23,6 @@ export function useResumes() {
 
   const fetchResumes = useCallback(async () => {
     if (!isAuthenticated || !user?.id) {
-      console.log("Not authenticated, skipping fetch");
       return;
     }
 
@@ -32,7 +31,6 @@ export function useResumes() {
       setError(null);
 
       const token = getToken();
-      console.log("Fetching resumes for authenticated user");
 
       const response = await fetch(`${API_BASE_URL}/api/resumes`, {
         headers: {
@@ -42,8 +40,6 @@ export function useResumes() {
         credentials: "include",
       });
 
-      console.log("Response status:", response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
@@ -52,7 +48,6 @@ export function useResumes() {
       }
 
       const result = await response.json();
-      console.log("Fetch result:", result);
 
       if (result.success) {
         setResumes(result.data);
@@ -72,8 +67,6 @@ export function useResumes() {
       setIsLoading(false);
     }
   }, [isAuthenticated, user?.id, toast, getToken]);
-
-  // hooks/use-resumes.js - Update the createResume function
 
   const createResume = useCallback(
     async (resumeData) => {
@@ -163,8 +156,6 @@ export function useResumes() {
           is_public: cleanData.is_public || false,
         };
 
-        console.log("Creating resume with validated data:", dataToSend);
-
         const response = await fetch(`${API_BASE_URL}/api/resumes`, {
           method: "POST",
           headers: {
@@ -176,7 +167,6 @@ export function useResumes() {
         });
 
         const result = await response.json();
-        console.log("Create resume response:", result);
 
         if (result.success) {
           setResumes((prev) => [result.data, ...prev]);
@@ -204,7 +194,6 @@ export function useResumes() {
     [isAuthenticated, user?.id, toast, getToken],
   );
 
-  // Also update the updateResume function similarly
   const updateResume = useCallback(
     async (resumeId, resumeData) => {
       if (!resumeId) return null;
@@ -618,8 +607,6 @@ export function useUploadResume() {
     return tokenCookie ? tokenCookie.split("=")[1] : null;
   }, []);
 
-  // hooks/use-resumes.js - Update the uploadResume function
-
   const uploadResume = useCallback(
     async (file, userId) => {
       if (!file) {
@@ -658,10 +645,6 @@ export function useUploadResume() {
         }, 200);
 
         const token = getToken();
-        console.log(
-          "📤 Uploading file to:",
-          `${API_BASE_URL}/api/upload/resume`,
-        );
 
         const response = await fetch(`${API_BASE_URL}/api/upload/resume`, {
           method: "POST",
@@ -676,7 +659,6 @@ export function useUploadResume() {
 
         // Parse the response
         const result = await response.json();
-        console.log("📥 Upload response:", result);
 
         if (!response.ok) {
           throw new Error(
