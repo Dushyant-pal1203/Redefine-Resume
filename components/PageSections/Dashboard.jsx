@@ -33,7 +33,8 @@ import {
     Trash2,
     Globe,
     Lock,
-    Share2
+    Share2,
+    ArrowLeft
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
@@ -74,6 +75,8 @@ export default function ResumeListPage() {
     const [selectedResumeId, setSelectedResumeId] = useState(null);
     const [sortBy, setSortBy] = useState('updated');
     const [sortOrder, setSortOrder] = useState('desc');
+
+    const handleGoBack = () => router.push('/');
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -278,7 +281,12 @@ export default function ResumeListPage() {
                     Create New Resume
                 </Button>
             </div>
-
+            <div className="justify-items-center sm:justify-items-start content-center">
+                <Button onClick={handleGoBack} variant="ghost" size="sm" className="bg-cyan-500/10 hover:bg-cyan-500/30 border border-cyan-500/50 group flex items-center text-gray-300 hover:text-white">
+                    <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+                    Back to Home
+                </Button>
+            </div>
             {/* Stats Cards */}
             <CardGrid columns={{ default: 1, sm: 2, lg: 4 }} gap="md">
                 {stats.map((stat, index) => (
