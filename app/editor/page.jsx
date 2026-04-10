@@ -1,470 +1,744 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Palette, Save, Printer, ArrowLeft, Sparkles, FileText, Zap, CheckCircle, BookType } from "lucide-react";
+import {
+    Palette,
+    Save,
+    ArrowLeft,
+    Sparkles,
+    FileText,
+    CheckCircle,
+    BookType,
+    Loader2,
+    Eye,
+    Settings,
+    Grid,
+    List,
+    Maximize2,
+    Minimize2,
+    Clock,
+    Zap,
+    Shield,
+    Globe,
+    Lock,
+    Menu,
+    X,
+    Download,
+    ChevronDown,
+    FileOutput
+} from "lucide-react";
 import ResumeEditor from '@/components/EditorSection/ResumeEditor';
 import LivePreview from '@/components/EditorSection/LivePreview';
-import { useReactToPrint } from "react-to-print";
-import { useSaveResume } from "@/hooks/use-resumes";
+import FuturisticATSScore from '@/components/EditorSection/FuturisticATSScore';
+import { useCreateResume, useUpdateResume, useTogglePublicResume, useResume } from "@/hooks/use-resumes";
+import { useTemplates } from "@/hooks/use-templates";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import DownloadPDF from '@/components/FunctionComponent/DownloadPDF';
+import { useAuth } from "@/hooks/use-auth";
+import { convertToFlexibleFormat, convertToOldFormat } from '@/lib/resume-schema';
 
 function EditorContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const saveResumeHook = useSaveResume();
+    const { mutate: createResume, isLoading: isCreating } = useCreateResume();
+    const { mutate: updateResume, isLoading: isUpdating } = useUpdateResume();
+    const { mutate: togglePublic, isLoading: isTogglingPublic } = useTogglePublicResume();
+    const { templates, isLoading: templatesLoading } = useTemplates();
     const { toast } = useToast();
+    const { user } = useAuth();
 
-    const saveResume = saveResumeHook?.mutateAsync || saveResumeHook?.mutate;
-    const isSaving = saveResumeHook?.isLoading || saveResumeHook?.isPending || false;
-
-    const [resumeData, setResumeData] = useState({
-        full_name: '',
-        email: '',
-        phone: '',
-        location: '',
-        professional_summary: 'Experienced Full Stack Developer with expertise in modern web technologies including React, Node.js, and MongoDB. Passionate about creating efficient, scalable web applications.',
-        experience: [],
-        education: [],
-        skills: [],
-        projects: []
-    });
-
-    const firstName = resumeData.full_name?.split(' ')[0] || 'Untitled';
+    // State
+    const [resumeData, setResumeData] = useState(() => getEmptyResumeData());
     const [selectedTemplate, setSelectedTemplate] = useState('modern');
     const [resumeId, setResumeId] = useState(null);
     const [resumeTitle, setResumeTitle] = useState('');
-    const [hasInitializedTitle, setHasInitializedTitle] = useState(false);
+    const [isPublic, setIsPublic] = useState(false);
     const [isAutoTitleEnabled, setIsAutoTitleEnabled] = useState(true);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [lastSaved, setLastSaved] = useState(null);
+    const [previewMode, setPreviewMode] = useState('split');
+    const [editorLayout, setEditorLayout] = useState('comfortable');
+    const [autoSave, setAutoSave] = useState(true);
+    const [autoSaveTimer, setAutoSaveTimer] = useState(null);
+    const [isLoadingResume, setIsLoadingResume] = useState(false);
 
-    // ✅ Add a ref to track if data has been loaded
+    // Mobile states
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [activeMobileView, setActiveMobileView] = useState('editor'); // 'editor' or 'preview'
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Refs
     const hasLoadedData = useRef(false);
+    const mountedRef = useRef(true);
+    const downloadRef = useRef(null);
+    const editorRef = useRef(null);
 
-    const printRef = useRef(null);
-
-    // Generate creative title suggestions based on name and profession
-    const getTitleSuggestions = () => {
-        const name = resumeData.full_name || 'Professional';
-        const firstName = name.split(' ')[0] || 'Professional';
-
-        return [
-            `${firstName}'s Resume`,
-            `${firstName} - Full Stack Developer`,
-            `${firstName} | Software Engineer`,
-            `${firstName}'s Professional Profile`,
-            `Resume of ${name}`,
-            `${firstName} - Tech Portfolio`
-        ];
-    };
-
-    // Auto-update resume_title when full_name changes AND auto-title is enabled
+    // Check if mobile on mount and resize
     useEffect(() => {
-        if (isAutoTitleEnabled && resumeData.full_name && !hasInitializedTitle) {
-            const newTitle = `${resumeData.full_name.split(' ')[0]}'s Resume`;
-            setResumeTitle(newTitle);
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+            if (window.innerWidth < 768) {
+                setPreviewMode('editor'); // Default to editor on mobile
+            }
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Computed
+    const firstName = resumeData.personal?.full_name?.split(' ')[0] || 'Untitled';
+    const isSaving = isCreating || isUpdating;
+    const canSave = resumeData.personal?.full_name?.trim() && resumeData.personal?.email?.trim();
+
+    // Get resume ID from URL
+    const urlResumeId = searchParams.get('resumeId');
+
+    // Fetch resume data if we have an ID
+    const { resume: fetchedResume, isLoading: isFetchingResume } = useResume(urlResumeId);
+
+    // Effect to load fetched resume data
+    useEffect(() => {
+        if (fetchedResume && !hasLoadedData.current && mountedRef.current) {
+            console.log('📥 Loading fetched resume:', fetchedResume);
+
+            // Convert to flexible format
+            const flexibleData = convertToFlexibleFormat(fetchedResume);
+            setResumeData(flexibleData);
+
+            // Set template if available
+            if (fetchedResume.template) {
+                setSelectedTemplate(fetchedResume.template);
+            }
+
+            // Set title
+            if (fetchedResume.resume_title) {
+                setResumeTitle(fetchedResume.resume_title);
+                setIsAutoTitleEnabled(false);
+            } else if (flexibleData.personal?.full_name) {
+                setResumeTitle(`${flexibleData.personal.full_name.split(' ')[0]}'s Resume`);
+            }
+
+            // Set public status
+            if (fetchedResume.is_public !== undefined) {
+                setIsPublic(fetchedResume.is_public);
+            }
+
+            setResumeId(urlResumeId);
+            hasLoadedData.current = true;
+
+            toast({
+                title: "✨ Resume Loaded",
+                description: "Your resume has been loaded successfully.",
+                variant: "default",
+            });
         }
-    }, [resumeData.full_name, isAutoTitleEnabled, hasInitializedTitle]);
+    }, [fetchedResume, urlResumeId, toast]);
 
-    // ✅ FIXED: Prevent duplicate toasts with useRef
+    // Load data from URL params (for new resumes or shared links)
     useEffect(() => {
+        if (hasLoadedData.current || !mountedRef.current || urlResumeId) return;
+
         const dataParam = searchParams.get('data');
         const templateParam = searchParams.get('template');
         const idParam = searchParams.get('resumeId');
+        const publicParam = searchParams.get('public');
 
-        if (templateParam) {
+        if (templateParam && templateParam !== selectedTemplate) {
             setSelectedTemplate(templateParam);
         }
 
-        if (idParam) {
+        if (idParam && idParam !== resumeId) {
             setResumeId(idParam);
         }
 
+        if (publicParam) {
+            setIsPublic(publicParam === 'true');
+        }
+
         if (dataParam && !hasLoadedData.current) {
-            // Mark as loaded immediately to prevent duplicate processing
             hasLoadedData.current = true;
 
             try {
-                const parsedData = JSON.parse(decodeURIComponent(dataParam));
-                console.log('📥 Data from URL:', parsedData);
-
-                const processedData = {
-                    ...parsedData,
-                    resume_id: idParam || parsedData.resume_id || parsedData.id,
-                    experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
-                    education: Array.isArray(parsedData.education) ? parsedData.education : [],
-                    skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
-                    projects: Array.isArray(parsedData.projects) ? parsedData.projects : []
-                };
-
-                setResumeData(processedData);
-
-                // Set title from parsed data if available
-                if (parsedData.resume_title) {
-                    setResumeTitle(parsedData.resume_title);
-                    setHasInitializedTitle(true);
-                } else if (parsedData.title) {
-                    setResumeTitle(parsedData.title);
-                    setHasInitializedTitle(true);
+                // Safely decode the URI component
+                let decodedData;
+                try {
+                    decodedData = decodeURIComponent(dataParam);
+                } catch (decodeError) {
+                    console.error('❌ URI decode error:', decodeError);
+                    decodedData = dataParam;
                 }
 
-                // ✅ Show toast only once
+                // Parse the JSON
+                let parsedData;
+                try {
+                    parsedData = JSON.parse(decodedData);
+                } catch (parseError) {
+                    console.error('❌ JSON parse error:', parseError);
+                    toast({
+                        title: "⚠️ Invalid Data",
+                        description: "The resume data is corrupted.",
+                        variant: "destructive",
+                    });
+                    return;
+                }
+
+                console.log('📥 Loading resume data from URL:', parsedData);
+
+                // Convert to flexible format
+                const flexibleData = convertToFlexibleFormat(parsedData);
+                setResumeData(flexibleData);
+
+                // Set title if available
+                if (parsedData.resume_title || parsedData.title) {
+                    setResumeTitle(parsedData.resume_title || parsedData.title);
+                    setIsAutoTitleEnabled(false);
+                } else if (flexibleData.personal?.full_name) {
+                    setResumeTitle(`${flexibleData.personal.full_name.split(' ')[0]}'s Resume`);
+                }
+
                 toast({
-                    title: "✨ Resume Loaded Successfully",
-                    description: "Your resume data has been loaded and is ready for editing.",
+                    title: "✨ Resume Loaded",
+                    description: "Your resume is ready for editing.",
                     variant: "default",
                 });
             } catch (error) {
-                console.error('❌ Error parsing URL data:', error);
+                console.error('❌ Error loading data:', error);
                 toast({
                     title: "⚠️ Load Failed",
-                    description: "Failed to load resume data from URL. Please try again.",
+                    description: "Failed to load resume data.",
                     variant: "destructive",
                 });
             }
         }
-    }, [searchParams, toast]); // ✅ Removed hasLoadedData from dependencies
+    }, [searchParams, selectedTemplate, resumeId, toast, urlResumeId]);
 
-    const handleUpdate = (data) => {
-        setResumeData(data);
-
-        // When full_name changes and auto-title is enabled, update the title
-        if (data.full_name && isAutoTitleEnabled && !hasInitializedTitle) {
-            const newFirstName = data.full_name.split(' ')[0];
-            setResumeTitle(`${newFirstName}'s Resume`);
-        }
-    };
-
-    const handlePDFUpload = (parsedData) => {
-        console.log('📄 PDF Upload - Parsed Data:', parsedData);
-
-        const processedData = {
-            full_name: parsedData.full_name || '',
-            email: parsedData.email || '',
-            phone: parsedData.phone || '',
-            location: parsedData.location || '',
-            professional_summary: parsedData.professional_summary || '',
-            experience: Array.isArray(parsedData.experience) ? parsedData.experience : [],
-            education: Array.isArray(parsedData.education) ? parsedData.education : [],
-            skills: Array.isArray(parsedData.skills) ? parsedData.skills : [],
-            projects: Array.isArray(parsedData.projects) ? parsedData.projects : []
+    // Set mounted ref
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            if (autoSaveTimer) clearTimeout(autoSaveTimer);
         };
+    }, [autoSaveTimer]);
 
-        if (processedData.experience.length === 0) {
-            processedData.experience = [{ company: '', position: '', duration: '' }];
-        }
-        if (processedData.education.length === 0) {
-            processedData.education = [{ institution: '', degree: '', year: '' }];
-        }
-        if (processedData.skills.length === 0) {
-            processedData.skills = [''];
-        }
-        if (processedData.projects.length === 0) {
-            processedData.projects = [{ name: '', description: '', technologies: '' }];
-        }
+    // Auto-save effect
+    useEffect(() => {
+        if (!autoSave || !canSave || !resumeData.personal?.full_name) return;
 
-        setResumeData(processedData);
+        if (autoSaveTimer) clearTimeout(autoSaveTimer);
 
-        // Set title from parsed data or create from name
-        if (parsedData.resume_title) {
-            setResumeTitle(parsedData.resume_title);
-            setHasInitializedTitle(true);
-        } else if (parsedData.title) {
-            setResumeTitle(parsedData.title);
-            setHasInitializedTitle(true);
-        } else if (parsedData.full_name) {
-            const firstName = parsedData.full_name.split(' ')[0];
-            setResumeTitle(`${firstName}'s Resume`);
-            setHasInitializedTitle(true);
+        const timer = setTimeout(() => {
+            if (mountedRef.current) {
+                handleSave(true);
+            }
+        }, 3000);
+
+        setAutoSaveTimer(timer);
+
+        return () => clearTimeout(timer);
+    }, [resumeData, selectedTemplate, resumeTitle, autoSave]);
+
+    // Auto-update title
+    useEffect(() => {
+        if (isAutoTitleEnabled && resumeData.personal?.full_name && mountedRef.current) {
+            setResumeTitle(`${resumeData.personal.full_name.split(' ')[0]}'s Resume`);
+        }
+    }, [resumeData.personal?.full_name, isAutoTitleEnabled]);
+
+    const handleUpdate = useCallback((data) => {
+        setResumeData(data);
+    }, []);
+
+    const handlePDFUpload = useCallback((parsedData) => {
+        console.log('📄 PDF Upload:', parsedData);
+
+        // Convert the uploaded data to flexible format
+        const flexibleData = convertToFlexibleFormat(parsedData);
+        setResumeData(flexibleData);
+
+        if (parsedData.full_name) {
+            setResumeTitle(`${parsedData.full_name.split(' ')[0]}'s Resume`);
         }
 
         toast({
-            title: "📄 PDF Upload Successful",
-            description: "Your resume has been successfully parsed from PDF.",
+            title: "📄 PDF Uploaded",
+            description: "Resume parsed successfully.",
             variant: "default",
         });
-    };
+    }, [toast]);
 
-    const handleSave = async () => {
-        if (!saveResume) {
-            console.error('❌ saveResume function is not available');
+    const handleSave = useCallback(async (isAutoSave = false) => {
+        if (!canSave) {
             toast({
-                title: "❌ Save Failed",
-                description: "Save function is not available. Please check your connection.",
+                title: "❌ Cannot Save",
+                description: "Please fill in required fields (Name and Email).",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Convert flexible format to old format for API
+        const oldFormatData = convertToOldFormat(resumeData);
+
+        // Add metadata
+        const dataToSave = {
+            ...oldFormatData,
+            resume_title: resumeTitle || `${firstName}'s Resume`,
+            template: selectedTemplate,
+            is_public: isPublic,
+            user_id: user?.id
+        };
+
+        console.log('💾 Saving resume:', dataToSave);
+
+        try {
+            let result;
+
+            if (resumeId) {
+                // Update existing
+                result = await updateResume(resumeId, dataToSave);
+                console.log('✅ Update result:', result);
+            } else {
+                // Create new
+                result = await createResume(dataToSave);
+                console.log('✅ Create result:', result);
+
+                if (result?.resume_id) {
+                    setResumeId(result.resume_id);
+
+                    // Update URL with the new resume ID without reloading
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('resumeId', result.resume_id);
+                    router.replace(`/editor?${params.toString()}`, { scroll: false });
+                }
+            }
+
+            setSaveSuccess(true);
+            setLastSaved(new Date());
+
+            setTimeout(() => {
+                if (mountedRef.current) {
+                    setSaveSuccess(false);
+                }
+            }, 2000);
+
+            if (!isAutoSave) {
+                toast({
+                    title: "✨ Saved Successfully",
+                    description: "Your resume has been saved.",
+                    variant: "default",
+                });
+            }
+        } catch (error) {
+            console.error('❌ Save failed:', error);
+
+            if (!isAutoSave) {
+                toast({
+                    title: "❌ Save Failed",
+                    description: error?.message || "Failed to save resume.",
+                    variant: "destructive",
+                });
+            }
+        }
+    }, [createResume, updateResume, resumeData, selectedTemplate, resumeId, resumeTitle, firstName, isPublic, canSave, toast, searchParams, router, user?.id]);
+
+    const handleTogglePublic = useCallback(async () => {
+        if (!resumeId) {
+            toast({
+                title: "❌ Cannot Change Visibility",
+                description: "Please save the resume first.",
                 variant: "destructive",
             });
             return;
         }
 
         try {
-            const dataToSave = {
-                ...resumeData,
-                template: selectedTemplate,
-                resume_id: resumeId,
-                resume_title: resumeTitle || `${firstName}'s Resume`
-            };
-
-            console.log('📤 Saving resume data:', dataToSave);
-
-            let result;
-            if (saveResumeHook?.mutateAsync) {
-                result = await saveResumeHook.mutateAsync(dataToSave);
-            } else if (saveResumeHook?.mutate) {
-                result = await new Promise((resolve, reject) => {
-                    saveResumeHook.mutate(dataToSave, {
-                        onSuccess: (data) => resolve(data),
-                        onError: (error) => reject(error),
-                    });
-                });
-            } else {
-                throw new Error('No valid save function found');
-            }
-
-            const newResumeId = result?.data?.resume_id || result?.resume_id || result?.id;
-            if (newResumeId) {
-                setResumeId(newResumeId);
-                setHasInitializedTitle(true);
-            }
-
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 2000);
+            const result = await togglePublic(resumeId);
+            setIsPublic(result.is_public);
 
             toast({
-                title: "✨ Save Successful!",
-                description: "Your resume has been saved successfully.",
+                title: result.is_public ? "🌐 Resume Published" : "🔒 Resume Private",
+                description: result.is_public
+                    ? "Your resume is now publicly accessible."
+                    : "Your resume is now private.",
                 variant: "default",
             });
         } catch (error) {
-            console.error('❌ Save failed:', error);
-
+            console.error('❌ Toggle failed:', error);
             toast({
-                title: "❌ Save Failed",
-                description: error?.message || "Failed to save resume. Please check your connection.",
+                title: "❌ Action Failed",
+                description: "Failed to update visibility.",
                 variant: "destructive",
             });
         }
-    };
+    }, [togglePublic, resumeId, toast]);
 
-    const handleTemplateChange = (e) => {
-        const newTemplate = e.target.value;
-        setSelectedTemplate(newTemplate);
-
+    const handleTemplateChange = useCallback((templateId) => {
+        setSelectedTemplate(templateId);
+        setIsMobileMenuOpen(false);
         toast({
             title: "🎨 Template Changed",
-            description: `Switched to ${newTemplate} template.`,
+            description: `Switched to ${templates.find(t => t.id === templateId)?.name || templateId} template.`,
             variant: "default",
         });
-    };
+    }, [templates, toast]);
 
-    const handlePrint = useReactToPrint({
-        contentRef: printRef,
-        documentTitle: resumeTitle || `${firstName}'s Resume`,
-        onBeforeGetContent: () => {
-            toast({
-                title: "📄 Preparing PDF",
-                description: "Your resume is being prepared for download...",
-                variant: "default",
-            });
-        },
-        onAfterPrint: () => {
-            toast({
-                title: "✅ PDF Generated",
-                description: "Your resume has been exported successfully.",
-                variant: "default",
-            });
-        },
-        onPrintError: (error) => {
-            console.error('❌ Print failed:', error);
-            toast({
-                title: "❌ PDF Generation Failed",
-                description: "Failed to generate PDF. Please try again.",
-                variant: "destructive",
-            });
-        },
-    });
+    const handleBack = useCallback(() => {
+        if (resumeData.personal?.full_name && !resumeId) {
+            if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                router.push('/');
+            }
+        } else {
+            router.push('/');
+        }
+    }, [router, resumeData, resumeId]);
 
-    const handleBack = () => {
-        router.push('/');
-        toast({
-            title: "👋 See You Soon!",
-            description: "Returning to dashboard...",
-            variant: "default",
-        });
-    };
-
-    const handleTitleChange = (e) => {
+    const handleTitleChange = useCallback((e) => {
         setResumeTitle(e.target.value);
-        setHasInitializedTitle(true);
         setIsAutoTitleEnabled(false);
-    };
+    }, []);
 
-    const applyTitleSuggestion = (suggestion) => {
-        setResumeTitle(suggestion);
-        setHasInitializedTitle(true);
-        setIsAutoTitleEnabled(false);
-
-        toast({
-            title: "✨ Title Updated",
-            description: `Resume title changed to "${suggestion}"`,
-            variant: "default",
-        });
-    };
-
-    const resetToAutoTitle = () => {
+    const resetToAutoTitle = useCallback(() => {
         setIsAutoTitleEnabled(true);
-        setHasInitializedTitle(false);
-        const newTitle = `${firstName}'s Resume`;
-        setResumeTitle(newTitle);
+        setResumeTitle(`${firstName}'s Resume`);
+        setIsMobileMenuOpen(false);
+    }, [firstName]);
 
+
+    // Template dropdown state
+    const [isTemplateOpen, setIsTemplateOpen] = useState(false);
+    const templateRef = useRef(null);
+
+
+    // ATSScore
+    const [isATSOpen, setIsATSOpen] = useState(false);
+    const handleOptimizeFromATS = useCallback(() => {
+        setIsATSOpen(false);
         toast({
-            title: "🔄 Auto-Title Enabled",
-            description: "Title will automatically update with your name.",
+            title: "✨ Optimization Started",
+            description: "We'll help you improve your ATS score.",
             variant: "default",
         });
-    };
+    }, [toast]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (templateRef.current && !templateRef.current.contains(event.target)) {
+                setIsTemplateOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Loading state
+    if (templatesLoading || isFetchingResume) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center gap-6 px-4 text-center"
+                >
+                    <div className="relative">
+                        <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
+                    </div>
+                    <div>
+                        <h2 className="text-white text-2xl font-bold mb-2">Loading Resume</h2>
+                        <p className="text-gray-400">Preparing your workspace...</p>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
 
     return (
-        <>
-            {/* Animated Background Gradient */}
-            <div className="fixed inset-0 bg-linear-to-br from-gray-900 via-purple-900/10 to-gray-900 -z-10" />
-
-            {/* Top Navigation Bar - Glassmorphism Design */}
-            <header className="sticky top-0 z-50 bg-black/40 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-purple-500/5">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        {/* Left Section - Back Button & Title Input */}
+        <div className="min-h-screen bg-linear-to-br from-gray-900 via-purple-900/10 to-gray-900">
+            {/* Mobile Top Navigation */}
+            <header className="sticky top-0 z-40 bg-black/40 backdrop-blur-xl border-b border-white/10">
+                <div className="container mx-auto px-3 py-2 md:py-3">
+                    {/* Desktop Header */}
+                    <div className="hidden md:flex items-center justify-between gap-4">
+                        {/* Left Section */}
                         <div className="flex items-center gap-3 flex-1">
-                            <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={handleBack}
-                                    className="hidden lg:flex text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 backdrop-blur-sm transition-all duration-300"
+                                    className="text-white/60 p-2 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10"
                                 >
                                     <ArrowLeft className="w-5 h-5" />
                                 </Button>
                             </motion.div>
 
-                            <Separator orientation="vertical" className="h-6 hidden lg:flex bg-white/10" />
+                            <Separator orientation="vertical" className="h-8 bg-white/10" />
 
-                            <div className="flex items-center gap-3 flex-1 lg:flex-none">
-                                <div className="relative group flex-1 lg:w-80">
-                                    <div className="absolute -inset-0.5 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-500" />
-                                    <div className="relative flex items-center">
-                                        <FileText className="absolute left-3 w-4 h-4 text-purple-400" />
-                                        <input
-                                            type="text"
-                                            className="w-full pl-10 pr-4 py-2.5 bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white placeholder-gray-400 transition-all duration-300"
-                                            placeholder="Enter resume title..."
-                                            value={resumeTitle || `${firstName}'s Resume`}
-                                            onChange={handleTitleChange}
-                                        />
+                            {/* Title Input */}
+                            <div className="relative group flex-1 max-w-80">
+                                <div className="absolute -inset-0.5 bg-linear-to-r from-purple-600 to-pink-600 rounded-lg blur opacity-30 group-hover:opacity-50 transition duration-500" />
+                                <div className="relative flex items-center">
+                                    <FileText className="absolute left-3 w-4 h-4 text-white/50 z-10" />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-10 pr-10 py-2.5 bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white placeholder-gray-400"
+                                        placeholder="Enter resume title..."
+                                        value={resumeTitle}
+                                        onChange={handleTitleChange}
+                                    />
+                                    <AnimatePresence>
                                         {isAutoTitleEnabled && (
                                             <motion.div
                                                 initial={{ opacity: 0, scale: 0.8 }}
                                                 animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.8 }}
                                                 className="absolute right-3"
+                                                title="Auto-title enabled"
                                             >
                                                 <Sparkles className="w-4 h-4 text-yellow-400" />
                                             </motion.div>
                                         )}
-                                    </div>
-                                </div>
-
-                                {/* Title Suggestions Dropdown */}
-                                <div className="relative group hidden lg:block">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="flex items-center bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white"
-                                    >
-                                        <BookType className="w-4 h-4 mr-2" />
-                                        Suggestions
-                                    </Button>
-                                    <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl shadow-purple-500/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                                        <div className="p-2 space-y-1">
-                                            {getTitleSuggestions().map((suggestion, index) => (
-                                                <motion.button
-                                                    key={index}
-                                                    initial={{ x: -10, opacity: 0 }}
-                                                    animate={{ x: 0, opacity: 1 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                    onClick={() => applyTitleSuggestion(suggestion)}
-                                                    className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors"
-                                                >
-                                                    {suggestion}
-                                                </motion.button>
-                                            ))}
-                                            <Separator className="my-2 bg-white/10" />
-                                            <button
-                                                onClick={resetToAutoTitle}
-                                                className="w-full text-left px-3 py-2 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/10 rounded-md transition-colors"
-                                            >
-                                                <Sparkles className="w-3 h-3 inline mr-2" />
-                                                Enable Auto-Title
-                                            </button>
-                                        </div>
-                                    </div>
+                                    </AnimatePresence>
                                 </div>
                             </div>
 
-                            {/* Template Selector */}
-                            <div className="hidden lg:flex items-center gap-3 ml-4">
-                                <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10">
-                                    <Palette className="w-4 h-4 text-purple-400" />
-                                    <select
-                                        value={selectedTemplate}
-                                        onChange={handleTemplateChange}
-                                        className="bg-transparent text-white border-none focus:outline-none focus:ring-0 text-sm cursor-pointer"
-                                    >
-                                        <option value="modern" className="bg-gray-900">✨ Modern</option>
-                                        <option value="minimal" className="bg-gray-900">🎯 Minimal</option>
-                                        <option value="creative" className="bg-gray-900">🎨 Creative</option>
-                                    </select>
+                            {/* Title Suggestions */}
+                            <div className="relative group hidden lg:block">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white"
+                                >
+                                    <BookType className="w-4 h-4 mr-2" />
+                                    Suggestions
+                                </Button>
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl shadow-purple-500/20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                                    <div className="p-2">
+                                        {[
+                                            `${firstName}'s Resume`,
+                                            `${firstName} - Professional Profile`,
+                                            `${firstName} | CV`,
+                                            `Resume of ${firstName}`,
+                                            `${firstName} - Portfolio`
+                                        ].map((suggestion, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => {
+                                                    setResumeTitle(suggestion);
+                                                    setIsAutoTitleEnabled(false);
+                                                }}
+                                                className="w-full text-left px-3 py-2 text-sm text-white/80 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                            >
+                                                {suggestion}
+                                            </button>
+                                        ))}
+                                        <Separator className="my-2 bg-white/10" />
+                                        <button
+                                            onClick={resetToAutoTitle}
+                                            className="w-full text-left px-3 py-2 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/10 rounded-md transition-colors"
+                                        >
+                                            <Sparkles className="w-3 h-3 inline mr-2" />
+                                            Enable Auto-Title
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Right Section - Action Buttons */}
-                        <div className="flex items-center justify-end gap-3">
+                        {/* Center Section - Template & Layout Controls */}
+                        <div className="hidden lg:flex items-center gap-3">
+                            {/* Template Selector */}
+                            <div
+                                ref={templateRef}
+                                className="relative flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10"
+                            >
+                                <Palette className="w-4 h-4 text-purple-400" />
+
+                                <button
+                                    type="button"
+                                    onClick={() => setIsTemplateOpen((prev) => !prev)}
+                                    className="flex items-center gap-2 text-sm text-white hover:text-purple-300 transition"
+                                >
+                                    {templates.find(t => t.id === selectedTemplate)?.name || "Select Template"}
+                                    <ChevronDown
+                                        className={`w-4 h-4 transition-transform duration-200 ${isTemplateOpen ? "rotate-180" : ""
+                                            }`}
+                                    />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isTemplateOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                            transition={{ duration: 0.18 }}
+                                            className="absolute top-full left-0 mt-2 w-52 bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl shadow-purple-500/20 z-50 overflow-hidden"
+                                        >
+                                            {templates.map((template) => (
+                                                <button
+                                                    key={template.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        handleTemplateChange(template.id);
+                                                        setIsTemplateOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2.5 text-sm transition-all duration-150
+                            ${selectedTemplate === template.id
+                                                            ? "bg-purple-600/20 text-purple-300"
+                                                            : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                                        }`}
+                                                >
+                                                    {template.name}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* Layout Toggle */}
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/10">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`w-8 h-8 justify-center ${previewMode === 'split' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setPreviewMode('split')}
+                                >
+                                    <Grid className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`w-8 h-8 justify-center ${previewMode === 'editor' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setPreviewMode('editor')}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`w-8 h-8 justify-center ${previewMode === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setPreviewMode('preview')}
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            {/* Editor Density */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditorLayout(editorLayout === 'comfortable' ? 'compact' : 'comfortable')}
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 p-2 text-gray-400 hover:text-white"
+                                title={editorLayout === 'comfortable' ? 'Compact view' : 'Comfortable view'}
+                            >
+                                {editorLayout === 'comfortable' ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                            </Button>
+                        </div>
+
+                        {/* Right Section - Actions */}
+                        <div className="flex items-center gap-2">
+                            {/* Auto-save Indicator */}
+                            {autoSave && lastSaved && (
+                                <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg border border-white/10">
+                                    <Clock className="w-3 h-3 text-gray-400" />
+                                    <span className="text-xs text-gray-400">
+                                        Saved {new Date(lastSaved).toLocaleTimeString()}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Public/Private Toggle */}
+                            {resumeId && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleTogglePublic}
+                                    disabled={isTogglingPublic}
+                                    className={`bg-white/5 hover:bg-white/10 border border-white/10 p-2 ${isPublic ? 'text-emerald-400' : 'text-gray-400'
+                                        }`}
+                                    title={isPublic ? 'Public' : 'Private'}
+                                >
+                                    {isTogglingPublic ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : isPublic ? (
+                                        <Globe className="w-4 h-4" />
+                                    ) : (
+                                        <Lock className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            )}
+
+                            {/* Auto-save Toggle */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setAutoSave(!autoSave)}
+                                className={`bg-white/5 hover:bg-white/10 border border-white/10 p-2 ${autoSave ? 'text-purple-400' : 'text-gray-400'
+                                    }`}
+                                title={autoSave ? 'Auto-save enabled' : 'Auto-save disabled'}
+                            >
+                                <Zap className="w-4 h-4" />
+                            </Button>
+
+                            {/* ATS Score Button */}
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                                 <Button
-                                    onClick={handleSave}
+                                    onClick={() => setIsATSOpen(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="relative overflow-hidden group bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 text-white shadow-lg shadow-purple-600/25"
-                                    disabled={isSaving}
+                                    className="bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 border-0 text-white shadow-lg shadow-purple-600/25"
                                 >
-                                    <AnimatePresence>
+                                    <Shield className="w-4 h-4 mr-2" />
+                                    ATS Score
+                                </Button>
+                            </motion.div>
+
+                            {/* Save Button */}
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    onClick={() => handleSave(false)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="relative overflow-hidden bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 text-white shadow-lg shadow-purple-600/25"
+                                    disabled={isSaving || !canSave}
+                                >
+                                    <AnimatePresence mode="wait">
                                         {saveSuccess ? (
                                             <motion.div
+                                                key="success"
                                                 initial={{ opacity: 0, scale: 0.5 }}
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.5 }}
                                                 className="flex items-center"
                                             >
-                                                <CheckCircle className="w-5 h-5 mr-2" />
+                                                <CheckCircle className="w-4 h-4 mr-2" />
                                                 Saved!
                                             </motion.div>
                                         ) : (
                                             <motion.div
+                                                key="save"
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
                                                 className="flex items-center"
                                             >
-                                                <Save className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
+                                                <Save className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                                                 {isSaving ? (
                                                     <>
-                                                        <span className="animate-pulse">Saving...</span>
-                                                        <Zap className="w-4 h-4 ml-2 animate-pulse" />
+                                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                        Saving...
                                                     </>
                                                 ) : (
                                                     'Save Resume'
@@ -475,102 +749,472 @@ function EditorContent() {
                                 </Button>
                             </motion.div>
 
+                            {/* Download PDF */}
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    onClick={handlePrint}
+                                <DownloadPDF
+                                    ref={downloadRef}
+                                    resumeId={resumeId}
+                                    filename={`${resumeData.personal?.full_name || 'resume'}-${selectedTemplate}.pdf`}
+                                    template={selectedTemplate}
                                     variant="default"
                                     size="sm"
-                                    className="flex items-centerrelative overflow-hidden group bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
-                                >
-                                    <Printer className="w-5 h-5 mr-2 group-hover:rotate-180 transition-transform duration-500" />
-                                    Export PDF
-                                </Button>
+                                    label="PDF Export"
+                                    icon={FileOutput}
+                                    showIcon={true}
+                                    showLabel={true}
+                                    resumeData={resumeData}
+                                    className="p-4 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-600/25"
+                                />
                             </motion.div>
                         </div>
                     </div>
+
+                    {/* Mobile Header */}
+                    <div className="flex md:hidden items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleBack}
+                                    className="text-white/60 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 h-9 w-9 justify-center"
+                                >
+                                    <ArrowLeft className="w-4 h-4" />
+                                </Button>
+                            </motion.div>
+
+                            <div className="relative flex-1 min-w-35">
+                                <div className="relative flex items-center">
+                                    <FileText className="absolute left-2 w-3 h-3 text-purple-400" />
+                                    <input
+                                        type="text"
+                                        className="w-full pl-7 pr-6 py-2 text-sm bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-white placeholder-gray-400"
+                                        placeholder="Title..."
+                                        value={resumeTitle}
+                                        onChange={handleTitleChange}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            {/* View Toggle for Mobile */}
+                            <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/10 mr-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-8 w-8 justify-center ${activeMobileView === 'editor' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setActiveMobileView('editor')}
+                                >
+                                    <FileText className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={`h-8 w-8 justify-center ${activeMobileView === 'preview' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+                                    onClick={() => setActiveMobileView('preview')}
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </Button>
+                            </div>
+
+                            {/* Mobile Menu Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 h-9 w-9 justify-center"
+                            >
+                                {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Expanded Menu */}
+                    <AnimatePresence>
+                        {isMobileMenuOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="md:hidden mt-3 overflow-hidden"
+                            >
+                                <div className="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-lg p-3 space-y-3">
+                                    {/* Template Selector */}
+                                    <div ref={templateRef} className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsTemplateOpen((prev) => !prev)}
+                                            className="flex items-center justify-between w-full px-3 py-2 bg-white/5 rounded-lg border border-white/10 text-white text-sm"
+                                        >
+                                            {templates.find(t => t.id === selectedTemplate)?.name || "Select Template"}
+                                            <ChevronDown
+                                                className={`w-4 h-4 transition-transform duration-200 ${isTemplateOpen ? "rotate-180" : ""
+                                                    }`}
+                                            />
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isTemplateOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -5 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -5 }}
+                                                    transition={{ duration: 0.18 }}
+                                                    className="absolute mt-2 w-full bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden"
+                                                >
+                                                    {templates.map((template) => (
+                                                        <button
+                                                            key={template.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                handleTemplateChange(template.id);
+                                                                setIsMobileMenuOpen(false);
+                                                                setIsTemplateOpen(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2.5 text-sm transition
+                            ${selectedTemplate === template.id
+                                                                    ? "bg-purple-600/20 text-purple-300"
+                                                                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                                                                }`}
+                                                        >
+                                                            {template.name}
+                                                        </button>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+
+                                    {/* Title Suggestions */}
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-1 block">Title Suggestions</label>
+                                        <div className="grid grid-cols-2 gap-1">
+                                            {[
+                                                `${firstName}'s Resume`,
+                                                `${firstName} - Profile`,
+                                                `${firstName} | CV`,
+                                                `Resume of ${firstName}`,
+                                            ].map((suggestion, index) => (
+                                                <button
+                                                    key={index}
+                                                    onClick={() => {
+                                                        setResumeTitle(suggestion);
+                                                        setIsAutoTitleEnabled(false);
+                                                        setIsMobileMenuOpen(false);
+                                                    }}
+                                                    className="text-left px-2 py-1.5 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded transition-colors"
+                                                >
+                                                    {suggestion}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={resetToAutoTitle}
+                                            className="mt-2 w-full text-left px-2 py-1.5 text-xs text-purple-400 hover:text-purple-300 hover:bg-white/10 rounded transition-colors"
+                                        >
+                                            <Sparkles className="w-3 h-3 inline mr-1" />
+                                            Enable Auto-Title
+                                        </button>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div>
+                                        <label className="text-xs text-gray-400 mb-1 block">Actions</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {/* Auto-save Indicator */}
+                                            {autoSave && lastSaved && (
+                                                <div className="flex items-center gap-1 px-2 py-1.5 bg-white/5 rounded-lg border border-white/10">
+                                                    <Clock className="w-3 h-3 text-gray-400" />
+                                                    <span className="text-xs text-gray-400">
+                                                        {new Date(lastSaved).toLocaleTimeString()}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Public/Private Toggle */}
+                                            {resumeId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={handleTogglePublic}
+                                                    disabled={isTogglingPublic}
+                                                    className={`bg-white/5 hover:bg-white/10 border border-white/10 ${isPublic ? 'text-emerald-400' : 'text-gray-400'}`}
+                                                >
+                                                    {isTogglingPublic ? (
+                                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                                    ) : isPublic ? (
+                                                        <Globe className="w-3 h-3 mr-1" />
+                                                    ) : (
+                                                        <Lock className="w-3 h-3 mr-1" />
+                                                    )}
+                                                    {isPublic ? 'Public' : 'Private'}
+                                                </Button>
+                                            )}
+
+                                            {/* Auto-save Toggle */}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setAutoSave(!autoSave)}
+                                                className={`bg-white/5 hover:bg-white/10 border border-white/10 ${autoSave ? 'text-purple-400' : 'text-gray-400'}`}
+                                            >
+                                                <Zap className="w-3 h-3 mr-1" />
+                                                {autoSave ? 'Auto On' : 'Auto Off'}
+                                            </Button>
+
+                                            {/* Editor Density */}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setEditorLayout(editorLayout === 'comfortable' ? 'compact' : 'comfortable')}
+                                                className="bg-white/5 hover:bg-white/10 border border-white/10 text-gray-400"
+                                            >
+                                                {editorLayout === 'comfortable' ? <Minimize2 className="w-3 h-3 mr-1" /> : <Maximize2 className="w-3 h-3 mr-1" />}
+                                                {editorLayout === 'comfortable' ? 'Compact' : 'Comfortable'}
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Save & Download */}
+                                    <div className="flex gap-2 pt-2">
+                                        <Button
+                                            onClick={() => {
+                                                handleSave(false);
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                            className="flex-1 justify-center bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-0 text-white"
+                                            disabled={isSaving || !canSave}
+                                        >
+                                            {saveSuccess ? (
+                                                <>
+                                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                                    Saved!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Save className="w-4 h-4 mr-2" />
+                                                    {isSaving ? 'Saving...' : 'Save'}
+                                                </>
+                                            )}
+                                        </Button>
+
+                                        <DownloadPDF
+                                            ref={downloadRef}
+                                            resumeId={resumeId}
+                                            filename={`${resumeData.personal?.full_name || 'resume'}-${selectedTemplate}.pdf`}
+                                            template={selectedTemplate}
+                                            variant="default"
+                                            size="sm"
+                                            label="PDF"
+                                            showIcon={true}
+                                            showLabel={true}
+                                            resumeData={resumeData} // Pass the current resume data
+                                            className="p-4 flex-1 justify-center bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 border-0 text-white"
+                                        />
+
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => {
+                                                setIsATSOpen(true);
+                                                setIsMobileMenuOpen(false);
+                                            }}
+                                            className="bg-white/5 hover:bg-white/10 border border-white/10 text-purple-400"
+                                        >
+                                            <Shield className="w-3 h-3 mr-1" />
+                                            ATS Score
+                                        </Button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </header>
 
-            {/* Main Content - Glassmorphism Design */}
-            <div className="flex flex-1 min-h-screen bg-linear-to-br from-gray-900 via-gray-800/50 to-gray-900">
-                {/* Left Panel - Editor */}
-                <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-1/3 border-r border-white/10 bg-black/20 backdrop-blur-sm"
-                >
-                    <div className="h-full overflow-y-auto custom-scrollbar">
-                        <ResumeEditor
-                            resumeData={resumeData}
-                            onUpdate={handleUpdate}
-                            onPDFUpload={handlePDFUpload}
-                        />
-                    </div>
-                </motion.div>
+            {/* Main Content */}
+            <div className="flex min-h-[calc(100vh-73px)] md:min-h-[calc(100vh-73px)]">
+                {/* Desktop View - Split/Editor/Preview */}
+                <div className="hidden md:flex w-full">
+                    <AnimatePresence mode="wait">
+                        {(previewMode === 'split' || previewMode === 'editor') && (
+                            <motion.div
+                                key="editor"
+                                initial={{ x: -20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: -20, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className={`
+                                    ${previewMode === 'split' ? 'w-2/6' : 'w-full'}
+                                    border-r border-white/10 bg-black/20 backdrop-blur-sm
+                                `}
+                            >
+                                <div ref={editorRef} className="h-full overflow-y-auto custom-scrollbar">
+                                    <ResumeEditor
+                                        resumeData={resumeData}
+                                        onUpdate={handleUpdate}
+                                        onPDFUpload={handlePDFUpload}
+                                        layout={editorLayout}
+                                        template={selectedTemplate}
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                {/* Right Panel - Preview */}
-                <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="w-2/3 bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50 backdrop-blur-sm"
-                >
-                    <div className="h-full overflow-y-auto custom-scrollbar p-6" ref={printRef}>
-                        <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
-                            <LivePreview
+                    <AnimatePresence mode="wait">
+                        {(previewMode === 'split' || previewMode === 'preview') && (
+                            <motion.div
+                                key="preview"
+                                initial={{ x: 20, opacity: 0 }}
+                                animate={{ x: 0, opacity: 1 }}
+                                exit={{ x: 20, opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className={`
+                                    ${previewMode === 'split' ? 'w-4/6' : 'w-full'}
+                                    bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50 backdrop-blur-sm
+                                `}
+                            >
+                                <div className="h-full overflow-y-auto custom-scrollbar">
+                                    <div className="p-1 pb-4">
+                                        <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+                                            <LivePreview
+                                                resumeData={resumeData}
+                                                template={selectedTemplate}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {/* Mobile View - Single Panel */}
+                <div className="md:hidden w-full">
+                    {activeMobileView === 'editor' ? (
+                        <div className="h-full overflow-y-auto custom-scrollbar">
+                            <ResumeEditor
                                 resumeData={resumeData}
+                                onUpdate={handleUpdate}
+                                onPDFUpload={handlePDFUpload}
+                                layout={editorLayout}
                                 template={selectedTemplate}
                             />
                         </div>
-                    </div>
-                </motion.div>
+                    ) : (
+                        <div className="h-full overflow-y-auto custom-scrollbar bg-linear-to-br from-gray-900/50 via-purple-900/10 to-gray-900/50">
+                            <div className="p-2 pb-4">
+                                <div className="bg-white/5 rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
+                                    <LivePreview
+                                        resumeData={resumeData}
+                                        template={selectedTemplate}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            {/* Custom Scrollbar Styles */}
-            <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.05);
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.2);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.3);
+            {/* Mobile Bottom Bar */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-xl border-t border-white/10 p-2 z-40">
+                <div className="flex items-center justify-around">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveMobileView('editor')}
+                        className={`flex-1 ${activeMobileView === 'editor' ? 'text-purple-400' : 'text-gray-400'}`}
+                    >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Edit
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveMobileView('preview')}
+                        className={`flex-1 ${activeMobileView === 'preview' ? 'text-purple-400' : 'text-gray-400'}`}
+                    >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Preview
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSave(false)}
+                        disabled={isSaving || !canSave}
+                        className="flex-1 text-emerald-400"
+                    >
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                        Save
+                    </Button>
+                </div>
+            </div>
+
+            {/* Add padding for mobile bottom bar */}
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    .min-h-screen {
+                        padding-bottom: 4rem;
+                    }
                 }
             `}</style>
-        </>
+
+            {/* ATS Score */}
+            <FuturisticATSScore
+                resumeData={resumeData}
+                isOpen={isATSOpen}
+                onClose={() => setIsATSOpen(false)}
+                resumeId={resumeId} // Add this prop
+            />
+        </div>
     );
+}
+
+// Helper function for empty resume data
+function getEmptyResumeData() {
+    return {
+        personal: {
+            full_name: '',
+            headline: '',
+            email: '',
+            phone: '',
+            location: '',
+            website: '',
+            linkedin: '',
+            github: '',
+            twitter: '',
+        },
+        summary: { summary: '' },
+        experience: [],
+        education: [],
+        skills: { technical: [], soft: [], languages: [] },
+        projects: [],
+        certifications: [],
+        languages: [],
+        publications: [],
+        awards: [],
+        volunteering: [],
+        interests: [],
+        customSections: {}
+    };
 }
 
 export default function EditorPage() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-linear-to-br from-gray-900 via-purple-900 to-gray-900">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="flex flex-col items-center gap-6"
-                >
+                <div className="flex flex-col items-center gap-6 px-4 text-center">
                     <div className="relative">
                         <div className="w-20 h-20 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-                        <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
+                        <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-purple-400 animate-pulse" />
                     </div>
-                    <div className="text-center">
-                        <div className="text-white text-2xl font-bold mb-2">Loading Editor</div>
-                        <div className="text-gray-400 text-sm">Preparing your creative workspace...</div>
+                    <div>
+                        <h2 className="text-white text-2xl font-bold mb-2">Loading Editor</h2>
+                        <p className="text-gray-400">Preparing your workspace...</p>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-                        <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                    </div>
-                </motion.div>
+                </div>
             </div>
         }>
             <EditorContent />

@@ -23,7 +23,7 @@ export function Button({
 
     return (
         <button
-            className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+            className={`flex items-center ${base} ${variants[variant]} ${sizes[size]} ${className}`}
             {...props}
         >
             {children}

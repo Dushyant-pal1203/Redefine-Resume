@@ -64,7 +64,7 @@ export function ResumeCard({ resume, onActionComplete }) {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl z-10"
+                                className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-800 rounded-lg shadow-xl"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <ResumeQuickActions

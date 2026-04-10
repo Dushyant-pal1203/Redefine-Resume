@@ -2,8 +2,13 @@
 
 import PdfUpload from "@/components/FunctionComponent/PdfUpload";
 import { motion } from "framer-motion";
+import { useUser } from "@/hooks/use-user";
+import {
+    FileInput,
+} from "lucide-react";
 
 export default function HeroSection() {
+    const { user } = useUser();
     return (
         <section className="relative pt-20 pb-32 px-6 m-0 bg-[#00000060]">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center text-center sm:text-left gap-12">
@@ -21,7 +26,7 @@ export default function HeroSection() {
                                     REDEFINED
                                 </span>
                                 <span className="block"></span>
-                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">DOCUMENT</span>
+                                <span className="bg-linear-to-r from-purple-500 via-pink-300 to-blue-500 bg-clip-text text-transparent">RESUME</span>
 
                             </h1>
 
@@ -34,7 +39,19 @@ export default function HeroSection() {
                             </p>
 
                             {/* Button Section */}
-                            <PdfUpload />
+                            <PdfUpload
+                                userId={user?.id}
+                                className="justify-items-center sm:justify-items-start"
+                                showDragDrop={false}
+                                firstButtonText="FORGE NEW ARTIFACT"
+                                secondButtonText="UPLOAD RESUME"
+                                // firstButtonIcon={Sparkles}
+                                secondButtonIcon={FileInput}
+                                // firstButtonClassName="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:shadow-2xl hover:shadow-purple-500/50 relative overflow-hidden group"
+                                // secondButtonClassName="!bg-[#00f3ff1c] hover:!bg-[#00f3ff30] text-white border border-cyan-500/50"
+                                layout="horizontal"
+                                gap="gap-6"
+                            />
                         </div>
                     </div>
                 </div>
