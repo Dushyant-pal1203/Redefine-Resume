@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation'; // Add this import
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from "@/components/ui/button";
 import UserMenu from '@/components/Auth/UserMenu';
@@ -14,6 +15,12 @@ export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const { isAuthenticated, isLoading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname(); // Add this to detect route changes
+
+    // Close mobile menu when route changes (navigation occurs)
+    useEffect(() => {
+        setIsMenuOpen(false);
+    }, [pathname]); // This will close menu whenever the URL changes
 
     // Handle scroll effect
     useEffect(() => {

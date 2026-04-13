@@ -316,12 +316,12 @@ export default function ResumeListPage() {
 
             {/* Filters and Search */}
             <Card variant="elevated" padding="md">
-                <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                <div className="flex flex-col-reverse lg:flex-row gap-4 items-start lg:items-center justify-between">
                     {/* Filter Tabs */}
                     <Tabs defaultValue="all" value={selectedFilter} onValueChange={setSelectedFilter} className="w-full lg:w-auto">
                         <TabsList className="bg-gray-900">
                             {filters.map((filter) => (
-                                <TabsTrigger key={filter.id} value={filter.id} className="relative">
+                                <TabsTrigger key={filter.id} value={filter.id} className="relative w-full lg:w-auto justify-start lg:justify-center">
                                     {filter.label}
                                     <Badge
                                         variant="secondary"
@@ -453,7 +453,7 @@ export default function ResumeListPage() {
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
                                                     <MoreVertical className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
