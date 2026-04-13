@@ -456,7 +456,7 @@ export default function AccountInfoPage() {
     }
 
     return (
-        <div className="min-h-screen bg-black/60 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-black/60 py-4 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 justify-between">
@@ -475,7 +475,7 @@ export default function AccountInfoPage() {
                 </div>
 
                 {/* Main Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4 md:mt-0">
                     {/* Sidebar */}
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
                         <div className="bg-linear-to-br from-gray-900 to-gray-800 rounded-2xl border border-purple-500/20 p-6">
