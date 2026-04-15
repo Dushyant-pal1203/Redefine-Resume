@@ -137,7 +137,7 @@ export default function YourArtifacts() {
         <>
             {!isAuthenticated ? (
                 // Unauthenticated view
-                <section id="artifacts" className="py-20 px-6 min-h-screen flex items-center bg-[#0000006b]">
+                <section id="artifacts" className="py-20 px-6 min-h-100 flex items-center bg-[#00000040]!">
                     <div className="container mx-auto max-w-7xl">
                         <Header />
                         <div className="mt-4 text-center p-16 max-w-7xl mx-auto bg-[#00000060] rounded-4xl">
@@ -226,7 +226,7 @@ export default function YourArtifacts() {
                 </section>
             ) : isLoading ? (
                 // Loading skeleton
-                <section id="artifacts" className="py-20 px-6">
+                <section id="artifacts" className="py-20 px-6 bg-[#00000040]!">
                     <div className="container mx-auto max-w-7xl">
                         <Header />
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -238,7 +238,7 @@ export default function YourArtifacts() {
                 </section>
             ) : (
                 // Authenticated view with content
-                <section id="artifacts" className="py-20 px-6">
+                <section id="artifacts" className="py-20 px-6 bg-[#00000040]!">
                     <div className="container mx-auto max-w-7xl">
                         <div className="flex flex-col sm:flex-row items-center justify-between mb-12 gap-6">
                             <Header />

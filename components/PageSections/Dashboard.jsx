@@ -262,7 +262,7 @@ export default function ResumeListPage() {
     }
 
     return (
-        <div className="space-y-6 p-6 bg-linear-to-br from-gray-950 via-gray-900 to-gray-950 min-h-screen">
+        <div className="space-y-6 p-6 bg-linear-to-br from-gray-950/50 via-gray-900/50 to-gray-950/50 min-h-screen">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 mb-8 md:mb-10">
                 <div>

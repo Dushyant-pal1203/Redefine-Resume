@@ -1,3 +1,4 @@
+// components/FunctionComponent/TemplatesPage.jsx
 "use client";
 import { motion } from "framer-motion";
 import {
@@ -24,22 +25,25 @@ import {
     Gem,
     Flame,
     Feather,
-    Star
+    Star,
+    Eye,
+    Download,
+    CheckCircle,
+    TrendingUp
 } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useTemplates } from '@/hooks/use-templates';
 import { Button } from "@/components/ui/button";
+import Image from 'next/image';
+import { useState } from 'react';
 
 // Icon mapping component with expanded icon set
 const IconComponent = ({ iconName, className }) => {
     const icons = {
-        // Original icons
         LaptopMinimalCheck: LaptopMinimalCheck,
         Codesandbox: Codesandbox,
         Component: Component,
         FileText: FileText,
-
-        // Additional icons for auto-generation
         Palette: Palette,
         Sparkles: Sparkles,
         Globe: Globe,
@@ -66,94 +70,33 @@ const IconComponent = ({ iconName, className }) => {
 
 // Color generation utility
 const generateTemplateColors = (index) => {
-    // Predefined color combinations for first 3 templates
     const predefinedColors = [
-        { from: 'from-cyan-500', to: 'to-blue-600', hover: 'cyan' },        // Modern
-        { from: 'from-emerald-500', to: 'to-teal-600', hover: 'emerald' },  // Minimal
-        { from: 'from-purple-500', to: 'to-pink-600', hover: 'purple' }     // Creative
+        { from: 'from-cyan-500', to: 'to-blue-600', hover: 'cyan', glow: 'cyan-500' },
+        { from: 'from-emerald-500', to: 'to-teal-600', hover: 'emerald', glow: 'emerald-500' },
+        { from: 'from-purple-500', to: 'to-pink-600', hover: 'purple', glow: 'purple-500' },
+        { from: 'from-amber-500', to: 'to-orange-600', hover: 'amber', glow: 'amber-500' },
+        { from: 'from-rose-500', to: 'to-red-600', hover: 'rose', glow: 'rose-500' },
+        { from: 'from-indigo-500', to: 'to-violet-600', hover: 'indigo', glow: 'indigo-500' }
     ];
 
-    // If it's one of the first 3, return predefined colors
-    if (index < 3) {
-        return predefinedColors[index];
-    }
-
-    // Generate random colors for templates beyond the first 3
-    const colorPairs = [
-        { from: 'from-amber-500', to: 'to-orange-600', hover: 'amber' },
-        { from: 'from-rose-500', to: 'to-red-600', hover: 'rose' },
-        { from: 'from-indigo-500', to: 'to-violet-600', hover: 'indigo' },
-        { from: 'from-green-500', to: 'to-lime-600', hover: 'green' },
-        { from: 'from-fuchsia-500', to: 'to-pink-600', hover: 'fuchsia' },
-        { from: 'from-blue-500', to: 'to-sky-600', hover: 'blue' },
-        { from: 'from-orange-500', to: 'to-amber-600', hover: 'orange' },
-        { from: 'from-teal-500', to: 'to-cyan-600', hover: 'teal' },
-        { from: 'from-violet-500', to: 'to-purple-600', hover: 'violet' },
-        { from: 'from-rose-500', to: 'to-pink-600', hover: 'rose' },
-        { from: 'from-sky-500', to: 'to-blue-600', hover: 'sky' },
-        { from: 'from-lime-500', to: 'to-green-600', hover: 'lime' },
-        { from: 'from-yellow-500', to: 'to-amber-600', hover: 'yellow' },
-        { from: 'from-pink-500', to: 'to-rose-600', hover: 'pink' }
-    ];
-
-    // Use modulo to cycle through color pairs, but offset by 3 to avoid repeating the first three
-    const colorIndex = (index - 3) % colorPairs.length;
-    return colorPairs[colorIndex];
+    const colorIndex = index % predefinedColors.length;
+    return predefinedColors[colorIndex];
 };
 
 // Icon generation utility
 const generateTemplateIcon = (index, templateName = '') => {
-    // Predefined icons for first 3 templates (matching their original icons)
-    const predefinedIcons = [
-        'LaptopMinimalCheck',  // Modern
-        'Codesandbox',         // Minimal
-        'Component'            // Creative
-    ];
+    const predefinedIcons = ['LaptopMinimalCheck', 'Codesandbox', 'Component', 'Palette', 'Sparkles', 'Globe'];
 
-    // If it's one of the first 3, return predefined icons
-    if (index < 3) {
-        return predefinedIcons[index];
-    }
-
-    // Icon pool for templates beyond the first 3
-    const iconPool = [
-        'Palette',
-        'Sparkles',
-        'Globe',
-        'Zap',
-        'Shield',
-        'Rocket',
-        'Brain',
-        'Code2',
-        'Briefcase',
-        'GraduationCap',
-        'Award',
-        'Target',
-        'Lightbulb',
-        'HeartHandshake',
-        'Gem',
-        'Flame',
-        'Feather',
-        'Star'
-    ];
-
-    // You can also use template name to generate consistent icons
-    // For example, if template name contains certain keywords
     if (templateName.toLowerCase().includes('tech') || templateName.toLowerCase().includes('code')) {
         return 'Code2';
     } else if (templateName.toLowerCase().includes('creative') || templateName.toLowerCase().includes('design')) {
         return 'Palette';
     } else if (templateName.toLowerCase().includes('executive') || templateName.toLowerCase().includes('business')) {
         return 'Briefcase';
-    } else if (templateName.toLowerCase().includes('academic') || templateName.toLowerCase().includes('education')) {
-        return 'GraduationCap';
-    } else if (templateName.toLowerCase().includes('simple') || templateName.toLowerCase().includes('basic')) {
-        return 'Feather';
     }
 
-    // Otherwise, use modulo to cycle through icons
-    const iconIndex = (index - 3) % iconPool.length;
-    return iconPool[iconIndex];
+    const iconIndex = index % predefinedIcons.length;
+    return predefinedIcons[iconIndex];
 };
 
 // Generate gradient string for className
@@ -164,8 +107,10 @@ const getGradientClass = (colors) => {
 export default function TemplatesPage() {
     const router = useRouter();
     const { templates, isLoading, error } = useTemplates();
+    const [hoveredTemplate, setHoveredTemplate] = useState(null);
+    const [imageErrors, setImageErrors] = useState({});
 
-    const handleUseTemplate = (templateName) => {
+    const handleUseTemplate = (templateId) => {
         const sampleData = {
             full_name: '',
             email: '',
@@ -179,42 +124,53 @@ export default function TemplatesPage() {
         };
 
         const encodedData = encodeURIComponent(JSON.stringify(sampleData));
-        router.push(`/editor?template=${templateName}&data=${encodedData}`);
+        router.push(`/editor?template=${templateId}&data=${encodedData}`);
+    };
+
+    const handlePreviewTemplate = (templateId) => {
+        router.push(`/preview-template/${templateId}`);
     };
 
     const handleGoBack = () => {
         router.push('/#templates');
     };
 
+    const handleImageError = (templateId) => {
+        setImageErrors(prev => ({ ...prev, [templateId]: true }));
+    };
+
     // Loading state
     if (isLoading) {
         return (
-            <section className="min-h-screen py-4 px-6 bg-black">
+            <section className="min-h-screen py-8 px-6 bg-[#0000005f]">
                 <div className="container mx-auto max-w-7xl">
-                    {/* Header with Back Button */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-12 flex items-center justify-between"
+                        className="mb-12 flex items-center justify-between flex-wrap gap-4"
                     >
                         <Button
                             onClick={handleGoBack}
                             variant="ghost"
-                            size="lg"
-                            className="bg-[#00f3ff1c]! hover:bg-[#00f3ff30]!  border border-cyan-500/50 group flex items-center text-gray-300 hover:text-white transition-all duration-300"
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 group flex items-center text-gray-300 hover:text-white transition-all duration-300 rounded-xl px-6 py-5"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                             Back to Home
                         </Button>
 
-                        {/* Void Detected Badge */}
-                        <div className="text-lg text-gray-300">
-                            <span className="text-cyan-400">✦</span> VOID DETECTED
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20">
+                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                            <span className="text-sm text-cyan-400 font-medium">LOADING TEMPLATES</span>
                         </div>
                     </motion.div>
+
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                        <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
-                        <p className="text-gray-400 text-lg">Loading templates...</p>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+                            <Loader2 className="relative w-16 h-16 text-cyan-400 animate-spin mb-6" />
+                        </div>
+                        <p className="text-gray-400 text-lg">Loading professional templates...</p>
+                        <p className="text-gray-500 text-sm mt-2">Preparing your gallery</p>
                     </div>
                 </div>
             </section>
@@ -224,60 +180,44 @@ export default function TemplatesPage() {
     // Error state
     if (error) {
         return (
-            <section className="min-h-screen py-4 px-6 bg-[#00000091]">
+            <section className="min-h-screen py-8 px-6 bg-[#0000005f]">
                 <div className="container mx-auto max-w-7xl">
-                    {/* Header with Back Button */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-12 flex items-center justify-between"
+                        className="mb-12 flex items-center justify-between flex-wrap gap-4"
                     >
                         <Button
                             onClick={handleGoBack}
                             variant="ghost"
-                            size="lg"
-                            className="bg-[#00f3ff1c]! hover:bg-[#00f3ff30]!  border border-cyan-500/50 group flex items-center text-gray-300 hover:text-white transition-all duration-300"
+                            className="bg-white/5 hover:bg-white/10 border border-white/10 group flex items-center text-gray-300 hover:text-white transition-all duration-300 rounded-xl px-6 py-5"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                             Back to Home
                         </Button>
 
-                        {/* Void Detected Badge */}
-                        <div className="text-lg text-gray-300">
-                            <span className="text-cyan-400">✦</span> VOID DETECTED
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20">
+                            <span className="text-sm text-red-400 font-medium">CONNECTION ERROR</span>
                         </div>
                     </motion.div>
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-                        {/* Animated Icon */}
-                        <div className="text-6xl mb-6 animate-bounce">
-                            🌐
-                        </div>
 
-                        {/* Heading */}
+                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+                        <div className="text-8xl mb-6 animate-bounce">🌐</div>
                         <h2 className="text-3xl font-bold text-white mb-3">
                             Unable to Connect to Server
                         </h2>
-
-                        {/* Subtext */}
                         <p className="text-gray-400 max-w-md mb-6">
                             We're having trouble establishing a connection with the server.
                             Please check your internet connection or try again in a moment.
                         </p>
-
-                        {/* Error Details */}
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm mb-6 max-w-lg">
                                 {error}
                             </div>
                         )}
-
-                        {/* Retry Button */}
                         <button
                             onClick={() => window.location.reload()}
-                            className="px-8 py-3 bg-linear-to-r from-cyan-500 to-blue-600 
-                                   text-white font-semibold rounded-xl 
-                                   hover:scale-105 hover:shadow-lg 
-                                   transition-all duration-300"
+                            className="px-8 py-3 bg-linear-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-300"
                         >
                             🔄 Reconnect
                         </button>
@@ -288,34 +228,34 @@ export default function TemplatesPage() {
     }
 
     return (
-        <main className="min-h-screen bg-[#00000091]">
-            {/* Background Effects */}
+        <main className="min-h-screen bg-[#0000005f]">
+            {/* Animated Background Effects */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-blue-500/5 rounded-full blur-3xl" />
             </div>
 
-            <div className="relative py-4 px-6">
+            <div className="relative py-8 px-6">
                 <div className="container mx-auto max-w-7xl">
-                    {/* Header with Back Button */}
+                    {/* Header */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mb-12 flex items-center justify-between"
+                        className="mb-12 flex items-center justify-between flex-wrap gap-4"
                     >
                         <Button
                             onClick={handleGoBack}
                             variant="ghost"
-                            size="sm"
-                            className="bg-[#00f3ff1c]! hover:bg-[#00f3ff30]!  border border-cyan-500/50 group flex items-center text-gray-300 hover:text-white transition-all duration-300"
+                            className="bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 group flex items-center text-gray-300 hover:text-white transition-all duration-300 rounded-xl px-6 py-5"
                         >
                             <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                             Back to Home
                         </Button>
 
-                        {/* Void Detected Badge */}
-                        <div className="test-sm sm:text-lg text-gray-300">
-                            <span className="text-cyan-400">✦</span> VOID DETECTED
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 backdrop-blur-sm border border-cyan-500/20">
+                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                            <span className="text-sm text-cyan-400 font-medium">TEMPLATE GALLERY</span>
                         </div>
                     </motion.div>
 
@@ -326,89 +266,180 @@ export default function TemplatesPage() {
                         transition={{ delay: 0.1 }}
                         className="mb-16 text-center"
                     >
-                        <h1 className=" md:text-7xl font-bold mb-6">
-                            <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
-                                ALL TEMPLATES
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
+                            <Star className="w-4 h-4 text-amber-400" />
+                            <span className="text-xs text-amber-400 font-medium">PROFESSIONAL COLLECTION</span>
+                        </div>
+                        <h1 className="text-5xl md:text-7xl font-bold mb-6">
+                            <span className="bg-linear-to-r from-amber-300 via-cyan-200 to-purple-300 bg-clip-text text-transparent">
+                                All Templates
                             </span>
                         </h1>
-                        <p className=" text-gray-300 max-w-2xl mx-auto">
-                            Explore our complete collection of professional resume templates.
-                            Each template is crafted to make your career story stand out.
+                        <p className="text-xl text-gray-300 max-w-6xl mx-auto">
+                            Explore our complete collection of professionally crafted resume templates.
+                            Each design is optimized to make your career story shine.
                         </p>
 
-                        {/* Template Count */}
-                        <div className="mt-4 text-lg text-gray-400">
-                            <span className="text-cyan-400">{templates.length}</span> templates available
+                        {/* Stats */}
+                        <div className="mt-6 flex items-center justify-center gap-6">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                                    <Gem className="w-4 h-4 text-cyan-400" />
+                                </div>
+                                <span className="text-gray-300">
+                                    <span className="text-cyan-400 font-bold">{templates.length}</span> Templates
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                    <TrendingUp className="w-4 h-4 text-purple-400" />
+                                </div>
+                                <span className="text-gray-300">
+                                    <span className="text-purple-400 font-bold">ATS-Friendly</span> Designs
+                                </span>
+                            </div>
                         </div>
                     </motion.div>
 
-                    {/* Templates Grid - All Templates */}
+                    {/* Templates Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {templates.map((template, index) => {
                             const colors = generateTemplateColors(index);
                             const gradientClass = getGradientClass(colors);
                             const iconName = generateTemplateIcon(index, template.name);
+                            const hasImageError = imageErrors[template.id];
+                            const hasPreviewImage = template.previewImage && !hasImageError;
 
                             return (
                                 <motion.div
                                     key={template.id}
-                                    initial={{ opacity: 0, y: 20 }}
+                                    initial={{ opacity: 0, y: 30 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    whileHover={{ y: -8 }}
+                                    onHoverStart={() => setHoveredTemplate(template.id)}
+                                    onHoverEnd={() => setHoveredTemplate(null)}
+                                    className="relative"
                                 >
-                                    <div className={`group relative bg-linear-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-6 hover:border-${colors.hover}-400 transition-all duration-300 hover:shadow-2xl hover:shadow-${colors.hover}-500/10 h-full flex flex-col`}>
-                                        {/* Glow Effect */}
-                                        <div className={`absolute -inset-0.5 bg-linear-to-r ${colors.from} ${colors.to} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
+                                    <div className="group relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl overflow-hidden hover:border-cyan-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/20 h-full flex flex-col">
+                                        {/* Animated Glow Effect */}
+                                        <div className={`absolute -inset-0.5 bg-linear-to-r ${colors.from} ${colors.to} rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500 pointer-events-none`}></div>
 
-                                        {/* Content */}
-                                        <div className="relative flex flex-col h-full">
-                                            {/* Header */}
-                                            <div className="flex items-center justify-between mb-6">
-                                                <h3 className="text-2xl font-bold text-white">{template.name}</h3>
-                                                {template.badge && (
-                                                    <span className={`px-3 py-1 bg-${colors.hover}-500/20 text-${colors.hover}-300 rounded-full text-sm font-medium`}>
-                                                        {template.badge}
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Preview Area */}
-                                            <div className="mb-6">
-                                                <div className={`h-48 ${gradientClass}/20 rounded-xl mb-4 flex items-center justify-center group-hover:scale-105 transition-transform duration-300`}>
-                                                    <div className="text-center">
-                                                        <div className={`w-16 h-16 mx-auto mb-3 ${gradientClass} rounded-full flex items-center justify-center`}>
+                                        {/* Preview Image Area */}
+                                        <div className="relative h-56 overflow-hidden bg-linear-to-br from-gray-800 to-gray-900">
+                                            {hasPreviewImage ? (
+                                                <>
+                                                    <div className="relative w-full h-full">
+                                                        <Image
+                                                            src={template.previewImage}
+                                                            alt={`${template.name} template preview`}
+                                                            fill
+                                                            className="object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                                                            onError={() => handleImageError(template.id)}
+                                                        />
+                                                        <div className="absolute inset-0 bg-linear-to-t from-gray-900 via-transparent to-transparent opacity-60" />
+                                                    </div>
+                                                    {/* Hover Overlay - Fixed click issues */}
+                                                    <div
+                                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 pointer-events-none group-hover:pointer-events-auto"
+                                                        style={{ zIndex: 10 }}
+                                                    >
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handlePreviewTemplate(template.id);
+                                                            }}
+                                                            className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-lg text-white font-medium flex items-center gap-2 hover:bg-white/20 transition-all transform hover:scale-105 cursor-pointer"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                            Quick Preview
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                // Fallback Preview
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <div className="text-center transform transition-transform duration-300 group-hover:scale-105">
+                                                        <div className={`w-20 h-20 mx-auto mb-4 ${gradientClass} rounded-2xl flex items-center justify-center shadow-xl`}>
                                                             <IconComponent
                                                                 iconName={iconName}
-                                                                className="w-8 h-8 text-white"
+                                                                className="w-10 h-10 text-white"
                                                             />
                                                         </div>
-                                                        <span className="text-white font-medium">Preview</span>
+                                                        <p className="text-gray-400 text-sm">Template Preview</p>
                                                     </div>
                                                 </div>
-                                                <p className="text-gray-400">
-                                                    {template.description}
-                                                </p>
+                                            )}
+
+                                            {/* Badge */}
+                                            {template.badge && (
+                                                <div className="absolute top-4 right-4 z-10">
+                                                    <span className={`px-3 py-1 bg-${colors.hover}-500/20 backdrop-blur-sm text-${colors.hover}-300 rounded-full text-xs font-medium border border-${colors.hover}-500/30`}>
+                                                        {template.badge}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Popular Badge for first 3 */}
+                                            {index < 3 && (
+                                                <div className="absolute top-4 left-4 z-10">
+                                                    <span className="px-3 py-1 bg-amber-500/20 backdrop-blur-sm text-amber-300 rounded-full text-xs font-medium flex items-center gap-1 border border-amber-500/30">
+                                                        <Flame className="w-3 h-3" />
+                                                        Popular
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-6 flex flex-col flex-1 relative z-10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h3 className="text-2xl font-bold text-white group-hover:text-transparent group-hover:bg-linear-to-r group-hover:from-amber-300 group-hover:to-cyan-200 group-hover:bg-clip-text transition-all duration-300">
+                                                    {template.name}
+                                                </h3>
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                    <span className="text-sm text-gray-400">4.9</span>
+                                                </div>
                                             </div>
 
-                                            {/* Features List */}
-                                            <div className="space-y-3 mb-6 grow">
-                                                {template.features.map((feature, i) => (
-                                                    <div key={i} className="flex items-center text-gray-300">
-                                                        <svg className={`w-5 h-5 text-${colors.hover}-400 mr-2 shrink-0`} fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <span>{feature}</span>
+                                            <p className="text-gray-400 mb-4 line-clamp-2">
+                                                {template.description || `Professional ${template.name.toLowerCase()} template designed for modern resumes and career success.`}
+                                            </p>
+
+                                            {/* Features */}
+                                            <div className="space-y-2 mb-6 flex-1">
+                                                {template.features?.slice(0, 3).map((feature, i) => (
+                                                    <div key={i} className="flex items-center text-sm text-gray-300">
+                                                        <CheckCircle className={`w-4 h-4 text-${colors.hover}-400 mr-2 shrink-0`} />
+                                                        <span className="line-clamp-1">{feature}</span>
                                                     </div>
                                                 ))}
                                             </div>
 
-                                            {/* Use Template Button */}
-                                            <button
-                                                onClick={() => handleUseTemplate(template.id)}
-                                                className={`w-full py-3 ${gradientClass} text-white font-semibold rounded-lg hover:from-${colors.hover}-600 hover:to-${colors.hover}-600 transition-all duration-300 transform hover:-translate-y-1 mt-auto`}
-                                            >
-                                                Use This Template
-                                            </button>
+                                            {/* Actions */}
+                                            <div className="flex gap-3 mt-auto">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handlePreviewTemplate(template.id);
+                                                    }}
+                                                    className="flex-1 py-2.5 bg-gray-800/50 hover:bg-gray-700/50 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 cursor-pointer relative z-20"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    Preview
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleUseTemplate(template.id);
+                                                    }}
+                                                    className={`flex-1 py-2.5 ${gradientClass} text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer relative z-20`}
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                    Use
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -421,21 +452,24 @@ export default function TemplatesPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5 }}
-                        className="mt-16 text-center justify-items-center"
+                        className="mt-20 text-center"
                     >
                         <Button
                             onClick={handleGoBack}
                             variant="outline"
-                            size="lg"
-                            className="bg-[#00f3ff1c]! hover:bg-[#00f3ff30]! border-gray-800 text-gray-300 hover:text-white hover:border-cyan-400 transition-all duration-300 group"
+                            className="bg-white/5 backdrop-blur-sm hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white hover:border-cyan-400 transition-all duration-300 group rounded-xl px-8 py-6 text-lg"
                         >
-                            <ArrowLeft className="w-6 h-6 mr-2 group-hover:rotate-90 transition-transform duration-500" />
+                            <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
                             Return to Homepage
                         </Button>
 
-                        {/* Your Artifacts Text */}
-                        <div className="mt-8 text-xs text-gray-600">
-                            {/* YOUR ARTIFACTS • FORGENE • UPLOAD RESUME */}
+                        {/* Footer Note */}
+                        <div className="mt-8 flex items-center justify-center gap-4 text-xs text-gray-300">
+                            <span>✨ ATS-Friendly</span>
+                            <span>•</span>
+                            <span>📄 Instant PDF Export</span>
+                            <span>•</span>
+                            <span>🎨 Fully Customizable</span>
                         </div>
                     </motion.div>
                 </div>

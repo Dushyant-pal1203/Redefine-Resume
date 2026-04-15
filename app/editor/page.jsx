@@ -758,8 +758,8 @@ function EditorContent() {
                                     template={selectedTemplate}
                                     variant="default"
                                     size="sm"
-                                    label="PDF Export"
-                                    icon={FileOutput}
+                                    label="Download"
+                                    icon={Download}
                                     showIcon={true}
                                     showLabel={true}
                                     resumeData={resumeData}

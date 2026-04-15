@@ -1,3 +1,4 @@
+// server/routes/templates.routes.js
 const express = require("express");
 const router = express.Router();
 const templates = require("../templates");
@@ -48,6 +49,32 @@ router.get("/:id", validate(templateValidators.id), (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch template",
+    });
+  }
+});
+
+// ADD THIS NEW METADATA ENDPOINT
+router.get("/:id/metadata", validate(templateValidators.id), (req, res) => {
+  try {
+    const { id } = req.params;
+    const metadata = templates.getTemplateMetadata(id);
+
+    if (!metadata) {
+      return res.status(404).json({
+        success: false,
+        error: "Template metadata not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: metadata,
+    });
+  } catch (error) {
+    console.error("Error fetching template metadata:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch template metadata",
     });
   }
 });
