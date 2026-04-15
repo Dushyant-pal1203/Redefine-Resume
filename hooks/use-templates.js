@@ -1,3 +1,4 @@
+// hooks/use-templates.js
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,20 +18,19 @@ export function useTemplates() {
       setError(null);
 
       const url = `${API_BASE_URL}/api/templates`;
+      console.log("Fetching templates from:", url);
 
       const response = await fetch(url, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
-        // Try to get error details
         const errorText = await response.text();
-        console.error("Error response body:", errorText);
-        throw new Error(
-          `HTTP error! status: ${response.status} - ${errorText}`,
-        );
+        console.error("Error response:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
@@ -41,15 +41,11 @@ export function useTemplates() {
         throw new Error(result.error || "Failed to fetch templates");
       }
     } catch (err) {
-      console.error("Error fetching templates:", {
-        message: err.message,
-        name: err.name,
-        stack: err.stack,
-      });
+      console.error("Error fetching templates:", err);
       setError(err.message);
       toast({
-        title: "❌ Connection Error",
-        description: `Failed to connect to server at ${API_BASE_URL}. Make sure backend is running.`,
+        title: "Connection Error",
+        description: `Failed to connect to server. Make sure backend is running on ${API_BASE_URL}`,
         variant: "destructive",
       });
     } finally {
@@ -89,7 +85,7 @@ export function useTemplates() {
       } catch (err) {
         console.error("Error fetching template:", err);
         toast({
-          title: "❌ Error",
+          title: "Error",
           description: `Failed to load template: ${templateId}`,
           variant: "destructive",
         });
@@ -181,7 +177,7 @@ export function useTemplate(templateId) {
         console.error("Error fetching template:", err);
         setError(err.message);
         toast({
-          title: "❌ Template Error",
+          title: "Template Error",
           description: `Failed to load template: ${templateId}`,
           variant: "destructive",
         });

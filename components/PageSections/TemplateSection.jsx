@@ -1,9 +1,22 @@
+// components/PageSections/TemplateSection.jsx
 "use client";
 import { motion } from "framer-motion";
-import { LaptopMinimalCheck, Codesandbox, Component, Loader2, FileText } from "lucide-react";
+import {
+    LaptopMinimalCheck,
+    Codesandbox,
+    Component,
+    Loader2,
+    FileText,
+    ArrowRight,
+    Star,
+    Eye,
+    Sparkles
+} from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useTemplates } from '@/hooks/use-templates';
 import { Button } from "@/components/ui/button";
+import Image from 'next/image';
+import { useState } from 'react';
 
 // Icon mapping component
 const IconComponent = ({ iconName, className }) => {
@@ -21,6 +34,7 @@ const IconComponent = ({ iconName, className }) => {
 export default function TemplateSection() {
     const router = useRouter();
     const { templates, isLoading, error } = useTemplates();
+    const [imageErrors, setImageErrors] = useState({});
 
     const handleUseTemplate = (templateName) => {
         const sampleData = {
@@ -43,59 +57,61 @@ export default function TemplateSection() {
         router.push('/templates');
     };
 
+    const handlePreviewTemplate = (templateId) => {
+        router.push(`/preview-template/${templateId}`);
+    };
+
+    const handleImageError = (templateId) => {
+        setImageErrors(prev => ({ ...prev, [templateId]: true }));
+    };
+
     // Loading state
     if (isLoading) {
         return (
-            <section id="templates" className="py-20 px-6">
+            <section id="templates" className="py-20 px-6 bg-[#0000005f]">
                 <div className="container mx-auto max-w-7xl">
-                    <div className="flex items-center justify-between mb-10">
+                    <div className="flex flex-col md:flex-row items-center justify-between mb-12">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             className="text-center md:text-left"
                         >
-                            <h2 className="text-5xl md:text-6xl font-bold mb-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
+                                <Sparkles className="w-4 h-4 text-cyan-400" />
+                                <span className="text-xs text-cyan-400 font-medium">PROFESSIONAL TEMPLATES</span>
+                            </div>
+                            <h2 className="text-5xl md:text-6xl font-bold mb-4">
                                 <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
-                                    TEMPLATES
+                                    Template
                                 </span>
-                                <span className="text-white ml-4">GALAXY</span>
+                                <span className="text-white ml-4">Gallery</span>
                             </h2>
-                            <p className="text-xl text-gray-300">
-                                Choose a template or upload your PDF - we'll handle the rest for you.
+                            <p className="text-xl text-gray-300 max-w-2xl">
+                                Choose from our collection of professionally designed templates
                             </p>
                         </motion.div>
 
-                        {/* View All Templates Button */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="flex justify-center"
                         >
-                            <div className="relative group">
-                                {/* Glow effect */}
-                                <div className="absolute -inset-1 bg-linear-to-r from-amber-300 to-cyan-200 rounded-xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
-
-                                {/* Button */}
-                                <Button
-                                    onClick={handleViewAllTemplates}
-                                    className="bg-transparent hover:bg-[#05232588]! relative px-8 py-6 text-lg border border-gray-800 hover:border-cyan-400 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 transform hover:-translate-y-1"
-                                >
-
-                                    {/* Main button content */}
-                                    <div className="flex items-center gap-3">
-                                        <span>TEMPLATES</span>
-                                        <span className="text-cyan-400">✦</span>
-                                        <span>GALLERY</span>
-                                    </div>
-                                </Button>
-                            </div>
+                            <Button
+                                onClick={handleViewAllTemplates}
+                                className="group bg-transparent hover:bg-white/5 relative px-8 py-6 text-lg border border-gray-700 hover:border-cyan-400 text-white font-semibold rounded-xl transition-all duration-300"
+                            >
+                                <span>View All Templates</span>
+                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                            </Button>
                         </motion.div>
                     </div>
                     <div className="flex flex-col items-center justify-center min-h-100">
-                        <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
-                        <p className="text-gray-400 text-lg">Loading templates...</p>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
+                            <Loader2 className="relative w-12 h-12 text-cyan-400 animate-spin mb-4" />
+                        </div>
+                        <p className="text-gray-400 text-lg">Loading professional templates...</p>
                     </div>
                 </div>
             </section>
@@ -105,89 +121,41 @@ export default function TemplateSection() {
     // Error state
     if (error) {
         return (
-            <section id="templates" className="py-20 px-6">
+            <section id="templates" className="py-20 px-6 bg-[#0000005f]">
                 <div className="container mx-auto max-w-7xl">
-                    <div className="flex items-center justify-between mb-10">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="text-center md:text-left"
-                        >
-                            <h2 className="text-5xl md:text-6xl font-bold mb-6">
-                                <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
-                                    TEMPLATES
-                                </span>
-                                <span className="text-white ml-4">GALAXY</span>
-                            </h2>
-                            <p className="text-xl text-gray-300">
-                                Choose a template or upload your PDF - we'll handle the rest for you.
-                            </p>
-                        </motion.div>
-
-                        {/* View All Templates Button */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="flex justify-center"
-                        >
-                            <div className="relative group">
-                                {/* Glow effect */}
-                                <div className="absolute -inset-1 bg-linear-to-r from-amber-300 to-cyan-200 rounded-xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
-
-                                {/* Button */}
-                                <Button
-                                    onClick={handleViewAllTemplates}
-                                    className="bg-transparent hover:bg-[#05232588]! relative px-8 py-6 text-lg border border-gray-800 hover:border-cyan-400 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 transform hover:-translate-y-1"
-                                >
-
-                                    {/* Main button content */}
-                                    <div className="flex items-center gap-3">
-                                        <span>TEMPLATES</span>
-                                        <span className="text-cyan-400">✦</span>
-                                        <span>GALLERY</span>
-                                    </div>
-                                </Button>
-                            </div>
-                        </motion.div>
-                    </div>
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-
-                        {/* Animated Icon */}
-                        <div className="text-6xl mb-6 animate-bounce">
-                            🌐
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-4">
+                            <span className="text-xs text-red-400 font-medium">CONNECTION ERROR</span>
                         </div>
-
-                        {/* Heading */}
-                        <h2 className="text-3xl font-bold text-white mb-3">
-                            Unable to Connect to Server
+                        <h2 className="text-5xl md:text-6xl font-bold mb-4">
+                            <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
+                                Unable to Load
+                            </span>
+                            <span className="text-white ml-4">Templates</span>
                         </h2>
-
-                        {/* Subtext */}
-                        <p className="text-gray-400 max-w-md mb-6">
-                            We’re having trouble establishing a connection with the server.
-                            Please check your internet connection or try again in a moment.
+                        <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+                            We're having trouble connecting to our template gallery
                         </p>
-
-                        {/* Error Details (Optional Debug Info) */}
+                    </div>
+                    <div className="flex flex-col items-center justify-center min-h-100 text-center">
+                        <div className="text-8xl mb-6 animate-bounce">🌐</div>
+                        <h3 className="text-2xl font-bold text-white mb-3">
+                            Connection Failed
+                        </h3>
+                        <p className="text-gray-400 max-w-md mb-6">
+                            Please check your internet connection and try again
+                        </p>
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm mb-6 max-w-lg">
                                 {error}
                             </div>
                         )}
-
-                        {/* Retry Button */}
                         <button
                             onClick={() => window.location.reload()}
-                            className="px-8 py-3 bg-linear-to-r from-cyan-500 to-blue-600 
-                                   text-white font-semibold rounded-xl 
-                                   hover:scale-105 hover:shadow-lg 
-                                   transition-all duration-300"
+                            className="px-8 py-3 bg-linear-to-r from-cyan-500 to-blue-600 text-white font-semibold rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-300"
                         >
-                            🔄 Reconnect
+                            🔄 Retry Connection
                         </button>
-
                     </div>
                 </div>
             </section>
@@ -198,117 +166,189 @@ export default function TemplateSection() {
     const displayedTemplates = templates.slice(0, 3);
 
     return (
-        <section id="templates" className="py-20 px-6 bg-no-repeat bg-center bg-contain">
-            <div className="container mx-auto max-w-7xl">
-                {/* Header and View All Button */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 mb-8 md:mb-10">
+        <section id="templates" className="py-20 px-6 bg-[#0000005f] relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute inset-0">
+                <div className="absolute top-1/4 left-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-[120px]" />
+                <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-purple-500/5 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="container mx-auto max-w-7xl relative z-10">
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-16">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="text-center md:text-left w-full md:w-auto"
+                        className="text-center md:text-left"
                     >
-                        <h2 className="text-5xl md:text-6xl font-bold mb-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-4">
+                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                            <span className="text-xs text-cyan-400 font-medium">PROFESSIONAL TEMPLATES</span>
+                        </div>
+                        <h2 className="text-5xl md:text-7xl font-bold mb-4">
                             <span className="bg-linear-to-r from-amber-300 to-cyan-200 bg-clip-text text-transparent">
-                                TEMPLATES
+                                Template
                             </span>
-                            <span className="text-white block sm:inline mt-1 sm:mt-0 sm:ml-4">GALAXY</span>
+                            <span className="text-white"> Gallery</span>
                         </h2>
-                        <p className="text-xl text-gray-300">
-                            Choose a template or upload your PDF - we'll handle the rest for you.
+                        <p className="text-xl text-gray-300 max-w-2xl">
+                            Choose from our collection of professionally designed templates and create your perfect resume in minutes
                         </p>
                     </motion.div>
 
-                    {/* View All Templates Button */}
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="flex justify-center w-full md:w-auto"
                     >
-                        <div className="relative justify-items-center group w-full sm:w-auto">
-                            {/* Glow effect */}
-                            <div className="absolute -inset-1 bg-linear-to-r from-amber-300 to-cyan-200 rounded-xl blur opacity-0 group-hover:opacity-75 transition duration-500"></div>
-
-                            {/* Button */}
+                        <div className="relative group">
+                            <div className="absolute -inset-0.5 bg-linear-to-r from-amber-300 to-cyan-200 rounded-xl blur opacity-0 group-hover:opacity-50 transition duration-500"></div>
                             <Button
                                 onClick={handleViewAllTemplates}
-                                className=" justify-center bg-transparent hover:bg-[#05232588]! relative px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg border border-gray-800 hover:border-cyan-400 text-white font-semibold rounded-xl hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 transform hover:-translate-y-1"
+                                className="relative bg-gray-900/50 backdrop-blur-sm hover:bg-gray-800/50 px-8 py-6 text-lg border border-gray-700 group-hover:border-cyan-400 text-white font-semibold rounded-xl transition-all duration-300"
                             >
-                                {/* Main button content */}
-                                <div className="flex items-center justify-center gap-2 sm:gap-3">
-                                    <span>TEMPLATES</span>
-                                    <span className="text-cyan-400 text-xl sm:text-2xl">✦</span>
-                                    <span>GALLERY</span>
-                                </div>
+                                <span>Browse All Templates</span>
+                                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                             </Button>
                         </div>
                     </motion.div>
                 </div>
-                {/* Templates Section - Displaying templates in a grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+
+                {/* Templates Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {displayedTemplates.map((template, index) => {
+                        const gradientColors = {
+                            modern: "from-cyan-500 to-blue-600",
+                            minimal: "from-emerald-500 to-teal-600",
+                            creative: "from-purple-500 to-pink-600"
+                        };
                         const hoverColor = template.id === 'modern' ? 'cyan' :
                             template.id === 'minimal' ? 'emerald' :
-                                template.id === 'creative' ? 'purple' : 'gray';
+                                template.id === 'professional' ? 'purple' : 'white';
+                        const gradient = gradientColors[template.id] || "from-gray-500 to-gray-600";
+                        const hasImageError = imageErrors[template.id];
+                        const hasPreviewImage = template.previewImage && !hasImageError;
 
                         return (
                             <motion.div
                                 key={template.id}
-                                initial={{ opacity: 0, y: 20 }}
+                                initial={{ opacity: 0, y: 30 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.1 }}
                                 viewport={{ once: true }}
+                                whileHover={{ y: -8 }}
+                                className="group"
                             >
-                                <div className={`group relative bg-linear-to-br from-gray-900 to-black border border-gray-800 rounded-2xl p-6 hover:border-${hoverColor}-400 transition-all duration-300 hover:shadow-2xl hover:shadow-${hoverColor}-500/10`}>
-                                    <div className={`absolute -inset-0.5 bg-linear-to-r ${template.color} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
-                                    <div className="relative">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-2xl font-bold text-white">{template.name}</h3>
-                                            {template.badge && (
-                                                <span className={`px-3 py-1 bg-${hoverColor}-500/20 text-${hoverColor}-300 rounded-full text-sm font-medium`}>
-                                                    {template.badge}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="mb-6">
-                                            <div className={`h-48 bg-linear-to-r ${template.color.replace('from-', 'from-').replace('to-', 'to-')}/20 rounded-xl mb-4 flex items-center justify-center`}>
-                                                <div className="text-center">
-                                                    <div className={`w-16 h-16 mx-auto mb-3 bg-linear-to-r ${template.color} rounded-full flex items-center justify-center`}>
-                                                        <IconComponent
-                                                            iconName={template.icon}
-                                                            className="w-8 h-8 text-white"
-                                                        />
-                                                    </div>
-                                                    <span className="text-white font-medium">Preview</span>
+                                <div className={`relative bg-gray-900/50 backdrop-blur-sm border border-gray-800 rounded-2xl overflow-hidden hover:border-${hoverColor}-400/50 transition-all duration-300 hover:shadow-2xl hover:shadow-${hoverColor}-500/20`}>
+                                    {/* Template Preview Image Area */}
+                                    <div className="relative h-64 overflow-hidden bg-linear-to-br from-gray-800 to-gray-900">
+                                        {/* Use template image if available, otherwise show preview */}
+                                        {hasPreviewImage ? (
+                                            <div className="relative w-full h-full">
+                                                <Image
+                                                    src={template.previewImage}
+                                                    alt={`${template.name} template preview`}
+                                                    fill
+                                                    className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                                    onError={() => handleImageError(template.id)}
+                                                />
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                                    <button
+                                                        onClick={() => handlePreviewTemplate(template.id)}
+                                                        className="px-4 py-2 bg-white/10 backdrop-blur-md rounded-lg text-white font-medium flex items-center gap-2 hover:bg-white/20 transition-all"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                        Preview Template
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <p className="text-gray-400">
-                                                {template.description}
-                                            </p>
+                                        ) : (
+                                            // Fallback preview if no image
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <div className="text-center">
+                                                    <div className={`w-20 h-20 mx-auto mb-4 bg-linear-to-r ${gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
+                                                        <IconComponent
+                                                            iconName={template.icon}
+                                                            className="w-10 h-10 text-white"
+                                                        />
+                                                    </div>
+                                                    <p className="text-gray-400 text-sm">Template Preview</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Badge */}
+                                        {template.badge && (
+                                            <div className="absolute top-4 right-4">
+                                                <span className={`px-3 py-1 bg-${hoverColor}-500/20 backdrop-blur-sm text-black rounded-full text-xs font-medium border border-${hoverColor}-500/30`}>
+                                                    {template.badge}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Template Info */}
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-2xl font-bold text-white">{template.name}</h3>
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                                <span className="text-sm text-gray-400">4.9</span>
+                                            </div>
                                         </div>
-                                        <div className="space-y-3 mb-6">
-                                            {template.features.map((feature, i) => (
-                                                <div key={i} className="flex items-center text-gray-300">
-                                                    <svg className={`w-5 h-5 text-${hoverColor}-400 mr-2`} fill="currentColor" viewBox="0 0 20 20">
+
+                                        <p className="text-gray-400 mb-4 line-clamp-2">
+                                            {template.description || `Professional ${template.name.toLowerCase()} template perfect for modern resumes`}
+                                        </p>
+
+                                        {/* Features */}
+                                        <div className="space-y-2 mb-6">
+                                            {template.features?.slice(0, 3).map((feature, i) => (
+                                                <div key={i} className="flex items-center text-sm text-gray-300">
+                                                    <svg className={`w-4 h-4 text-${hoverColor}-400 mr-2 shrink-0`} fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
-                                                    <span>{feature}</span>
+                                                    <span className="line-clamp-1">{feature}</span>
                                                 </div>
                                             ))}
                                         </div>
-                                        <button
-                                            onClick={() => handleUseTemplate(template.id)}
-                                            className={`w-full py-3 bg-linear-to-r ${template.color} text-white font-semibold rounded-lg hover:from-${hoverColor}-600 hover:to-${hoverColor}-600 transition-all duration-300 transform hover:-translate-y-1`}
-                                        >
-                                            Use This Template
-                                        </button>
+
+                                        {/* Actions */}
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => handlePreviewTemplate(template.id)}
+                                                className="flex-1 py-2.5 bg-gray-800 hover:bg-gray-700 text-white font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                Preview
+                                            </button>
+                                            <button
+                                                onClick={() => handleUseTemplate(template.id)}
+                                                className={`flex-1 py-2.5 bg-linear-to-r ${gradient} text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5`}
+                                            >
+                                                Use Template
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>
                         );
                     })}
                 </div>
+
+                {/* Bottom CTA */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mt-16 text-center"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                        <span className="text-gray-400">✨</span>
+                        <span className="text-sm text-gray-300">All templates are ATS-friendly and fully customizable</span>
+                    </div>
+                </motion.div>
             </div>
         </section>
     );

@@ -46,13 +46,13 @@ module.exports = `
 /* Profile Section */
 .resume-modern-wrapper .rm-profile {
   text-align: left;
-  margin-bottom: 25px;
-  padding-bottom: 20px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 2px solid rgba(255,255,255,0.1);
 }
 
 .resume-modern-wrapper .rm-name-sidebar {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 6px;
   color: white;
@@ -60,20 +60,20 @@ module.exports = `
 }
 
 .resume-modern-wrapper .rm-title-sidebar {
-  font-size: 13px;
+  font-size: 11px;
   color: #94a3b8;
   font-weight: 400;
 }
 
 /* Contact Info in Sidebar */
 .resume-modern-wrapper .rm-sidebar-section {
-  margin-bottom: 25px;
+  margin-bottom: 10px;
 }
 
 .resume-modern-wrapper .rm-sidebar-title {
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 2px solid #818cf8;
   color: white;
@@ -83,10 +83,10 @@ module.exports = `
 .resume-modern-wrapper .rm-contact-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
   color: #cbd5e1;
-  font-size: 12px;
+  font-size: 10px;
   word-break: break-word;
 }
 
@@ -117,7 +117,7 @@ module.exports = `
 
 /* Skills in Sidebar */
 .resume-modern-wrapper .rm-skill-item {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 .resume-modern-wrapper .rm-skill-header {
@@ -125,7 +125,7 @@ module.exports = `
   justify-content: space-between;
   margin-bottom: 5px;
   color: #cbd5e1;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .resume-modern-wrapper .rm-skill-bar {
@@ -153,7 +153,7 @@ module.exports = `
   background: rgba(255,255,255,0.08);
   border-radius: 20px;
   color: #cbd5e1;
-  font-size: 11px;
+  font-size: 8px;
   font-weight: 400;
   border: 1px solid rgba(255,255,255,0.05);
 }
@@ -163,7 +163,7 @@ module.exports = `
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-size: 12px;
   padding-bottom: 8px;
   border-bottom: 1px dashed rgba(255,255,255,0.1);
@@ -188,8 +188,8 @@ module.exports = `
 
 /* Certifications in Sidebar */
 .resume-modern-wrapper .rm-cert-item-sidebar {
-  margin-bottom: 15px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px dashed rgba(255,255,255,0.1);
 }
 
@@ -212,22 +212,22 @@ module.exports = `
 /* Main Content Styles */
 .resume-modern-wrapper .rm-main {
   background: white;
-  padding: 30px;
+  padding: 10px 30px;
 }
 
 .resume-modern-wrapper .rm-main-header {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .resume-modern-wrapper .rm-main-section {
-  margin-bottom: 25px;
+  margin-bottom: 10px;
 }
 
 .resume-modern-wrapper .rm-main-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #0f172a;
-  margin-bottom: 15px;
+  margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 2px solid #e2e8f0;
   position: relative;
@@ -246,11 +246,11 @@ module.exports = `
 /* Summary */
 .resume-modern-wrapper .rm-summary {
   background: #f8fafc;
-  padding: 18px;
+  padding: 10px;
   border-radius: 12px;
   color: #334155;
   line-height: 1.7;
-  font-size: 13px;
+  font-size: 11px;
   border-left: 4px solid #818cf8;
 }
 
@@ -258,7 +258,7 @@ module.exports = `
 .resume-modern-wrapper .rm-timeline-item {
   position: relative;
   padding-left: 24px;
-  margin-bottom: 25px;
+  margin-bottom: 10px;
   border-left: 2px solid #e2e8f0;
 }
 
@@ -289,13 +289,13 @@ module.exports = `
 }
 
 .resume-modern-wrapper .rm-item-title {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .resume-modern-wrapper .rm-item-company {
-  font-size: 13px;
+  font-size: 11px;
   color: #475569;
   font-weight: 500;
   margin-bottom: 4px;
@@ -316,11 +316,11 @@ module.exports = `
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 8px;
+  margin: 4px 0 4px;
 }
 
 .resume-modern-wrapper .rm-item-description {
-  font-size: 13px;
+  font-size: 11px;
   color: #475569;
   line-height: 1.6;
 }
@@ -351,9 +351,9 @@ module.exports = `
 /* Project Items */
 .resume-modern-wrapper .rm-project-item {
   background: #f8fafc;
-  padding: 18px;
+  padding: 10px;
   border-radius: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 5px;
   border: 1px solid #e2e8f0;
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -367,7 +367,7 @@ module.exports = `
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -390,7 +390,7 @@ module.exports = `
   background: #e0e7ff;
   color: #4f46e5;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 8px;
   font-weight: 500;
 }
 
@@ -402,7 +402,7 @@ module.exports = `
   text-decoration: none;
   font-size: 12px;
   font-weight: 500;
-  margin-top: 12px;
+  margin-top: 8px;
   border-bottom: 1px dotted transparent;
 }
 
@@ -415,7 +415,7 @@ module.exports = `
   background: #f8fafc;
   padding: 15px;
   border-radius: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -449,7 +449,7 @@ module.exports = `
 .resume-modern-wrapper .rm-award-item {
   display: flex;
   gap: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   padding: 15px;
   background: #f8fafc;
   border-radius: 10px;
@@ -498,7 +498,7 @@ module.exports = `
 
 /* Volunteering */
 .resume-modern-wrapper .rm-volunteer-item {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
   padding: 15px;
   background: #f8fafc;
   border-radius: 10px;
@@ -529,30 +529,112 @@ module.exports = `
 }
 
 .resume-modern-wrapper .rm-exp-number {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #818cf8;
   margin-right: 8px;
 }
 
-/* Print Styles */
+/* PDF-specific optimizations */
 @media print {
+  /* Force print color accuracy */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
   .resume-modern-wrapper {
-    background: white;
+    background: white !important;
   }
+  
   .resume-modern-wrapper .rm-container {
-    box-shadow: none;
-    margin: 0;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    border-radius: 0 !important;
   }
-  .resume-modern-wrapper .rm-project-item:hover {
-    transform: none;
+  
+  /* Prevent page breaks inside sections */
+  .rm-timeline-item, 
+  .rm-project-item, 
+  .rm-cert-item,
+  .rm-award-item,
+  .rm-volunteer-item,
+  .rm-publication-item,
+  .rm-main-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Keep headers with content */
+  .rm-main-title,
+  .rm-sidebar-title {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  /* Avoid page breaks right after headers */
+  h1, h2, h3, h4, .rm-main-title, .rm-sidebar-title {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  /* Ensure sidebar background prints */
+  .rm-sidebar {
+    background: #1e293b !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure text contrast in sidebar */
+  .rm-sidebar, 
+  .rm-sidebar * {
+    color: #f1f5f9 !important;
+  }
+  
+  /* Fix link display */
+  .rm-contact-item a {
+    color: white !important;
+  }
+  
+  /* Remove hover effects for print */
+  .rm-project-item:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* Ensure proper spacing */
+  .rm-main {
+    padding: 20px !important;
+  }
+  
+  .rm-sidebar {
+    padding: 20px !important;
+  }
+  
+  /* Fix grid layout for print */
+  .rm-container {
+    display: grid !important;
+    grid-template-columns: 280px 1fr !important;
+    gap: 0 !important;
+  }
+  
+  /* Fix skill bars for print */
+  .rm-skill-progress {
+    background: #818cf8 !important;
+  }
+  
+  /* Remove shadows and effects */
+  .rm-project-item {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
   }
 }
 
 /* Responsive */
-@media (max-width: 700px) {
+@media screen and (max-width: 700px) {
   .resume-modern-wrapper .rm-container {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 </style>
@@ -569,7 +651,7 @@ module.exports = `
       <div class="rm-name-sidebar">{{full_name}}</div>
       <div class="rm-title-sidebar">
         {{#if job_title}}{{job_title}}{{/if}}
-        {{#if headline}} · {{headline}}{{/if}}
+        {{#if headline}} <br /> {{headline}}{{/if}}
       </div>
     </div>
 
@@ -803,36 +885,6 @@ module.exports = `
     </div>
     {{/if}}
 
-    <!-- Education -->
-    {{#if education.length}}
-    <div class="rm-main-section">
-      <div class="rm-main-title">Education</div>
-      {{#each education}}
-      <div class="rm-timeline-item">
-        <div class="rm-item-header">
-          <div>
-            <div class="rm-item-title">{{this.degree}}</div>
-            <div class="rm-item-company">{{#if this.institution}}{{this.institution}}{{else}}{{this.school}}{{/if}}</div>
-          </div>
-          {{#if this.start_date}}
-          <div class="rm-item-date">
-            {{this.start_date}} – {{#if this.current}}Present{{else}}{{this.end_date}}{{/if}}
-          </div>
-          {{/if}}
-        </div>
-        
-        {{#if this.location}}
-        <div class="rm-item-location">📍 {{this.location}}</div>
-        {{/if}}
-        
-        {{#if this.grade}}
-        <div style="color: #818cf8; font-size: 13px; margin: 6px 0;">{{this.grade}}</div>
-        {{/if}}
-      </div>
-      {{/each}}
-    </div>
-    {{/if}}
-
     <!-- Projects -->
     {{#if projects.length}}
     <div class="rm-main-section">
@@ -866,6 +918,36 @@ module.exports = `
     </div>
     {{/if}}
 
+     <!-- Education -->
+    {{#if education.length}}
+    <div class="rm-main-section">
+      <div class="rm-main-title">Education</div>
+      {{#each education}}
+      <div class="rm-timeline-item">
+        <div class="rm-item-header">
+          <div>
+            <div class="rm-item-title">{{this.degree}}</div>
+            <div class="rm-item-company">{{#if this.institution}}{{this.institution}}{{else}}{{this.school}}{{/if}}</div>
+          </div>
+          {{#if this.start_date}}
+          <div class="rm-item-date">
+            {{this.start_date}} – {{#if this.current}}Present{{else}}{{this.end_date}}{{/if}}
+          </div>
+          {{/if}}
+        </div>
+        
+        {{#if this.location}}
+        <div class="rm-item-location">📍 {{this.location}}</div>
+        {{/if}}
+        
+        {{#if this.grade}}
+        <div style="color: #818cf8; font-size: 11px; margin: 6px 0;">{{this.grade}}</div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{/if}}
+
     <!-- Awards -->
     {{#if awards.length}}
     <div class="rm-main-section">
@@ -880,24 +962,6 @@ module.exports = `
       </div>
       {{/each}}
     </div>
-    {{/if}}
-
-    <!-- Certifications (Main - if not in sidebar) -->
-    {{#if certifications.length}}
-    {{#unless hide_certifications_main}}
-    <div class="rm-main-section">
-      <div class="rm-main-title">Certifications</div>
-      {{#each certifications}}
-      <div class="rm-cert-item">
-        <div class="rm-cert-info">
-          <h4>{{#if this.name}}{{this.name}}{{else}}{{this}}{{/if}}</h4>
-          {{#if this.issuer}}<div class="rm-cert-issuer">{{this.issuer}}</div>{{/if}}
-        </div>
-        {{#if this.date}}<span class="rm-cert-date">{{this.date}}</span>{{/if}}
-      </div>
-      {{/each}}
-    </div>
-    {{/unless}}
     {{/if}}
 
     <!-- Publications -->
@@ -927,8 +991,6 @@ module.exports = `
       {{/each}}
     </div>
     {{/if}}
-
-    <!-- Experience Summary -->
 
     <!-- Custom Sections -->
     {{#if parsed_sections}}

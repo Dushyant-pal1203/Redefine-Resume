@@ -113,6 +113,14 @@ const DownloadPDF = forwardRef(
             router.push(loginPath);
         }, [router, toast, loginMessage, loginPath]);
 
+        const handleDownloadDoc = useCallback(() => {
+            toast({
+                title: "📄 Comming Soon",
+                description: "This feature is under development. Stay tuned for updates!",
+                duration: 3000,
+            });
+        }, [toast]);
+
         const handleDownload = useCallback(async () => {
             // Check authentication first
             if (requireAuth && !isAuthenticated) {
@@ -257,7 +265,7 @@ const DownloadPDF = forwardRef(
                             <DropdownMenuLabel className="px-3 py-2.5 text-sm font-semibold text-gray-900 border-b border-gray-100">
                                 <span className="flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-blue-500" />
-                                    PDF Options
+                                    Download Options
                                 </span>
                             </DropdownMenuLabel>
 
@@ -276,9 +284,29 @@ const DownloadPDF = forwardRef(
                                     `}
                                 >
                                     <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500/0 via-transparent to-transparent group-hover:from-blue-500/5 transition-all duration-500"></div>
-                                    <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-blue-500 transition-colors" />
-                                    <span className="font-medium">Download PDF</span>
-                                    <kbd className="ml-auto text-xs text-gray-400 group-hover:text-gray-500">⌘D</kbd>
+                                    {/* <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-blue-500 transition-colors" /> */}
+                                    <kbd className="w-4 h-4 mr-3 text-gray-500 group-hover:text-blue-500 transition-colors">💾</kbd>
+                                    <span className="font-medium">PDF Format</span>
+                                    <kbd className="ml-auto text-xs text-gray-400 group-hover:text-gray-500">📕</kbd>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={handleDownloadDoc}
+                                    disabled={isTechnicallyDisabled && !needsAuth}
+                                    className={`
+                                        relative flex items-center px-3 py-2.5 rounded-lg text-sm
+                                        transition-all duration-200 cursor-pointer
+                                        ${(isTechnicallyDisabled && !needsAuth)
+                                            ? 'opacity-50 cursor-not-allowed bg-gray-50'
+                                            : 'hover:bg-linear-to-r hover:from-blue-50 hover:to-indigo-50/50 hover:text-blue-700 active:scale-[0.98]'
+                                        }
+                                        group
+                                    `}
+                                >
+                                    <div className="absolute inset-0 rounded-lg bg-linear-to-r from-blue-500/0 via-transparent to-transparent group-hover:from-blue-500/5 transition-all duration-500"></div>
+                                    {/* <Download className="w-4 h-4 mr-3 text-gray-500 group-hover:text-blue-500 transition-colors" /> */}
+                                    <kbd className="w-4 h-4 mr-3 text-gray-500 group-hover:text-blue-500 transition-colors">💾</kbd>
+                                    <span className="font-medium">Doc Format</span>
+                                    <kbd className="ml-auto text-xs text-gray-400 group-hover:text-gray-500">📝</kbd>
                                 </DropdownMenuItem>
 
                                 {needsAuth && (

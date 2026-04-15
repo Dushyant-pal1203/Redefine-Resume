@@ -25,17 +25,17 @@ module.exports = `
 
 /* Main Container - Clean and Airy */
 .resume-minimal-wrapper .rm-container {
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 1000px;
+  margin: 20px auto;
   background: white;
-  padding: 35px 40px;
+  padding: 30px 35px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.03);
 }
 
 /* Typography - Minimal and Elegant */
 .resume-minimal-wrapper .rm-name {
   font-size: 32px;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: -0.5px;
   margin-bottom: 4px;
   color: #000000;
@@ -45,8 +45,8 @@ module.exports = `
   font-size: 14px;
   font-weight: 300;
   color: #5c5c5c;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
+  margin-bottom: 10px;
+  padding-bottom: 5px;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -55,7 +55,7 @@ module.exports = `
   display: flex;
   flex-wrap: wrap;
   gap: 20px 30px;
-  margin-bottom: 25px;
+  margin-bottom: 10px;
   color: #4a4a4a;
   font-size: 12px;
 }
@@ -83,8 +83,10 @@ module.exports = `
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  margin: 25px 0 12px;
+  margin: 10px 0 8px;
   color: #2c2c2c;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
 }
 
 .resume-minimal-wrapper .rm-section-title:first-of-type {
@@ -102,7 +104,7 @@ module.exports = `
 
 /* Experience & Education Items */
 .resume-minimal-wrapper .rm-item {
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 }
 
 .resume-minimal-wrapper .rm-item-header {
@@ -211,9 +213,9 @@ module.exports = `
 
 /* Projects - Minimal Cards */
 .resume-minimal-wrapper .rm-project-item {
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #f5f5f5;
+  margin-bottom: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #f5f5f5;
 }
 
 .resume-minimal-wrapper .rm-project-item:last-child {
@@ -291,7 +293,7 @@ module.exports = `
 
 /* Certifications - Clean List */
 .resume-minimal-wrapper .rm-cert-item {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .resume-minimal-wrapper .rm-cert-name {
@@ -393,14 +395,148 @@ module.exports = `
   letter-spacing: 0.3px;
 }
 
-/* Print Styles */
+/* ========== ENHANCED PRINT STYLES ========== */
 @media print {
-  .resume-minimal-wrapper {
-    background: white;
+  /* Force print color accuracy and remove backgrounds where needed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
+  
+  .resume-minimal-wrapper {
+    background: white !important;
+  }
+  
   .resume-minimal-wrapper .rm-container {
-    box-shadow: none;
-    padding: 20px;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+    padding: 15px 20px !important;
+    max-width: 100% !important;
+  }
+  
+  /* Ensure all text colors print correctly */
+  .resume-minimal-wrapper,
+  .resume-minimal-wrapper .rm-name,
+  .resume-minimal-wrapper .rm-headline,
+  .resume-minimal-wrapper .rm-section-title,
+  .resume-minimal-wrapper .rm-item-title,
+  .resume-minimal-wrapper .rm-item-company,
+  .resume-minimal-wrapper .rm-item-description,
+  .resume-minimal-wrapper .rm-summary,
+  .resume-minimal-wrapper .rm-contact-item,
+  .resume-minimal-wrapper .rm-contact-item a,
+  .resume-minimal-wrapper .rm-skill-item,
+  .resume-minimal-wrapper .rm-project-name,
+  .resume-minimal-wrapper .rm-project-description,
+  .resume-minimal-wrapper .rm-language-name,
+  .resume-minimal-wrapper .rm-cert-name,
+  .resume-minimal-wrapper .rm-award-name,
+  .resume-minimal-wrapper .rm-publication-title,
+  .resume-minimal-wrapper .rm-volunteer-org,
+  .resume-minimal-wrapper .rm-interest-item {
+    color: #000000 !important;
+  }
+  
+  /* Keep muted colors for dates and secondary info */
+  .resume-minimal-wrapper .rm-item-date,
+  .resume-minimal-wrapper .rm-item-location,
+  .resume-minimal-wrapper .rm-language-level,
+  .resume-minimal-wrapper .rm-cert-issuer,
+  .resume-minimal-wrapper .rm-cert-date,
+  .resume-minimal-wrapper .rm-project-tech,
+  .resume-minimal-wrapper .rm-project-link a,
+  .resume-minimal-wrapper .rm-award-desc,
+  .resume-minimal-wrapper .rm-publication-details,
+  .resume-minimal-wrapper .rm-volunteer-role {
+    color: #555555 !important;
+  }
+  
+  /* Prevent page breaks inside critical sections */
+  .rm-item,
+  .rm-project-item,
+  .rm-cert-item,
+  .rm-award-item,
+  .rm-publication-item,
+  .rm-volunteer-item,
+  .rm-skills-category,
+  .rm-languages-grid,
+  .rm-interests,
+  .rm-summary,
+  .rm-contact-bar {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Keep section headers with their content */
+  .rm-section-title {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  /* Avoid orphaned headers */
+  h1, h2, h3, h4, .rm-section-title, .rm-name {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  /* Fix link display - ensure URLs are visible */
+  .rm-contact-item a {
+    text-decoration: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* Remove hover effects for print */
+  .rm-contact-item a:hover {
+    border-bottom-color: transparent !important;
+  }
+  
+  /* Ensure borders print correctly */
+  .rm-section-title {
+    border-top: 1px solid #e0e0e0 !important;
+  }
+  
+  .rm-headline {
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+  
+  .rm-project-item {
+    border-top: 1px solid #e0e0e0 !important;
+  }
+  
+  .rm-language-item {
+    border-bottom: 1px dotted #e0e0e0 !important;
+  }
+  
+  /* Remove background colors for better printing */
+  .resume-minimal-wrapper {
+    background: white !important;
+  }
+  
+  /* Ensure proper margins for print */
+  @page {
+    margin: 0.1in;
+    size: A4;
+  }
+  
+  /* Fix for skill separators - ensure dots print */
+  .rm-skill-item:not(:last-child)::after {
+    color: #999999 !important;
+  }
+  
+  /* Ensure achievement bullets print */
+  .rm-achievement-item::before {
+    color: #999999 !important;
+  }
+  
+  /* Fix for interest dots */
+  .rm-interest-item::before {
+    color: #999999 !important;
+  }
+  
+  /* Remove any box shadows */
+  .rm-container {
+    box-shadow: none !important;
   }
 }
 

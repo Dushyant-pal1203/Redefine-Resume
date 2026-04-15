@@ -5,6 +5,7 @@ module.exports = `
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{full_name}} - Professional Resume</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 /* Reset and Base Styles - Modern Professional like second image */
@@ -26,17 +27,17 @@ module.exports = `
 
 /* A4 Size Container - Clean white card */
 .resume-professional-wrapper .rp-container {
-  max-width: 900px;
-  margin: 0 auto;
+  max-width: 1000px;
+  margin: 20px auto;
   background: white;
-  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   padding: 30px 35px;
-  border-radius: 16px;
+  border-radius: 24px;
 }
 
 /* Header - Modern minimal */
 .resume-professional-wrapper .rp-header {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .resume-professional-wrapper .rp-name {
@@ -70,9 +71,9 @@ module.exports = `
   flex-wrap: wrap;
   gap: 20px 28px;
   background: #f8fafc;
-  padding: 12px 18px;
+  padding: 12px;
   border-radius: 12px;
-  margin: 8px 0 16px;
+  margin: 8px 0;
   align-items: center;
 }
 
@@ -87,7 +88,7 @@ module.exports = `
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 11px;
   color: #1e293b;
 }
 
@@ -106,7 +107,6 @@ module.exports = `
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
-  margin-top: 20px;
 }
 
 /* Left Column */
@@ -122,8 +122,8 @@ module.exports = `
   letter-spacing: 0.03em;
   color: #0f172a;
   margin: 20px 0 12px;
-  border-bottom: 2px solid #e2e8f0;
   padding-bottom: 6px;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .resume-professional-wrapper .rp-section-title:first-of-type {
@@ -132,7 +132,7 @@ module.exports = `
 
 /* Summary Text */
 .resume-professional-wrapper .rp-summary {
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.6;
   color: #334155;
   margin: 8px 0;
@@ -145,7 +145,7 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-skills-group h4 {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   margin-bottom: 8px;
   color: #1e293b;
@@ -163,7 +163,7 @@ module.exports = `
   color: #1e293b;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
 }
 
@@ -182,7 +182,7 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-item-title {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
 }
@@ -190,24 +190,27 @@ module.exports = `
 .resume-professional-wrapper .rp-item-company {
   font-weight: 600;
   color: #2563eb;
-  font-size: 13px;
+  font-size: 11px;
   margin-bottom: 2px;
 }
 
 .resume-professional-wrapper .rp-item-date {
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
+  background: #f1f5f9;
+  padding: 4px 12px;
+  border-radius: 20px;
 }
 
 .resume-professional-wrapper .rp-item-location {
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
   margin-bottom: 6px;
 }
 
 .resume-professional-wrapper .rp-item-description {
-  font-size: 13px;
+  font-size: 11px;
   color: #334155;
   margin: 6px 0;
   line-height: 1.5;
@@ -220,7 +223,7 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-achievement-item {
-  font-size: 13px;
+  font-size: 11px;
   margin-bottom: 4px;
   padding-left: 16px;
   position: relative;
@@ -250,13 +253,13 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-project-name {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-project-tech {
-  font-size: 12px;
+  font-size: 10px;
   color: #2563eb;
   font-weight: 500;
   margin-bottom: 6px;
@@ -269,7 +272,7 @@ module.exports = `
 .resume-professional-wrapper .rp-project-link a {
   color: #2563eb;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   border-bottom: 1px dotted #94a3b8;
 }
@@ -281,20 +284,20 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-degree {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-school {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: #2563eb;
   margin-bottom: 2px;
 }
 
 .resume-professional-wrapper .rp-grade {
-  font-size: 12px;
+  font-size: 11px;
   color: #475569;
   margin-top: 2px;
 }
@@ -308,14 +311,14 @@ module.exports = `
 
 .resume-professional-wrapper .rp-cert-name,
 .resume-professional-wrapper .rp-award-name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-cert-issuer,
 .resume-professional-wrapper .rp-award-desc {
-  font-size: 12px;
+  font-size: 10px;
   color: #475569;
   margin-top: 2px;
 }
@@ -330,13 +333,13 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-language-name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-language-level {
-  font-size: 12px;
+  font-size: 10px;
   color: #475569;
   font-style: italic;
 }
@@ -353,7 +356,7 @@ module.exports = `
   background: #f1f5f9;
   padding: 4px 14px;
   border-radius: 30px;
-  font-size: 12px;
+  font-size: 10px;
   color: #1e293b;
   font-weight: 500;
 }
@@ -365,13 +368,13 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-publication-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-publication-details {
-  font-size: 12px;
+  font-size: 10px;
   color: #475569;
   margin-top: 2px;
 }
@@ -382,13 +385,13 @@ module.exports = `
 }
 
 .resume-professional-wrapper .rp-volunteer-org {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #0f172a;
 }
 
 .resume-professional-wrapper .rp-volunteer-role {
-  font-size: 12px;
+  font-size: 10px;
   color: #2563eb;
   margin-bottom: 4px;
 }
@@ -400,7 +403,7 @@ module.exports = `
   border-top: 1px solid #e2e8f0;
   text-align: center;
   color: #64748b;
-  font-size: 12px;
+  font-size: 10px;
 }
 
 /* Print optimization */

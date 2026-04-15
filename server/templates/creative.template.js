@@ -46,10 +46,8 @@ module.exports = `
 }
 
 .resume-creative-wrapper .rc-name {
-  font-size: 28pt;
-  font-weight: 700;
-  margin-bottom: 2px;
-  letter-spacing: -1px;
+  font-size: 26pt;
+  font-weight: 600;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
   background: linear-gradient(to right, #fff, #f0f0f0);
   -webkit-background-clip: text;
@@ -71,17 +69,24 @@ module.exports = `
   letter-spacing: 2px;
 }
 
+.resume-creative-wrapper .rc-quick-info-pannel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
 .resume-creative-wrapper .rc-quick-info {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 8px;
 }
 
 .resume-creative-wrapper .rc-info-chip {
   background: rgba(255,255,255,0.2);
   backdrop-filter: blur(10px);
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 50px;
   display: flex;
   align-items: center;
@@ -205,8 +210,9 @@ module.exports = `
 
 .resume-creative-wrapper .rc-item-date {
   background: linear-gradient(135deg, #f5f7fa, #e4e8f0);
-  padding: 5px 10px;
-  border-radius: 50px;
+  padding: 4px 8px;
+  font-size: 8px;
+  border-radius: 30px;
   font-weight: 600;
   color: #4158D0;
 }
@@ -215,18 +221,19 @@ module.exports = `
 .resume-creative-wrapper .rc-skills-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 5px;
   margin-top: 8px;
 }
 
 .resume-creative-wrapper .rc-skill-badge {
   background: linear-gradient(135deg, #667eea15, #764ba215);
   color: #4158D0;
-  padding: 5px 10px;
+  padding: 4px 8px !important;
   border-radius: 50px;
   font-weight: 500;
   border: 1px solid rgba(65, 88, 208, 0.2);
   transition: all 0.3s;
+  font-size: 8px;
 }
 
 .resume-creative-wrapper .rc-skill-badge:hover {
@@ -265,7 +272,8 @@ module.exports = `
 
 .resume-creative-wrapper .rc-tech-tag {
   background: white;
-  padding: 5px 10px;
+  padding: 4px 8px;
+  font-size: 8px;
   border-radius: 30px;
   color: #4158D0;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -338,72 +346,73 @@ module.exports = `
 <body>
 <div class="resume-creative-wrapper">
 <div class="rc-container">
+  <div class="rc-header-wave">
+    <div class="rc-header-content">
+      <div class="rc-name">{{full_name}}</div>
+      <div class="rc-title">{{#if job_title}}{{job_title}}{{/if}}</div>
+      <div class="rc-subtitle">{{#if headline}}{{headline}}{{/if}}</div>
+      <div class="rc-quick-info-pannel">
+        <div class="rc-quick-info">
+          {{#if email}}<span class="rc-info-chip">📧 {{email}}</span>{{/if}}
+          {{#if phone}}<span class="rc-info-chip">📱 {{phone}}</span>{{/if}}
+          {{#if location}}<span class="rc-info-chip">📍 {{location}}</span>{{/if}}
+        </div>
 
-<div class="rc-header-wave">
-  <div class="rc-header-content">
-    <div class="rc-name">{{full_name}}</div>
-    <div class="rc-title">{{#if job_title}}{{job_title}}{{/if}}</div>
-    <div class="rc-subtitle">{{#if headline}}{{headline}}{{/if}}</div>
-    <div class="rc-quick-info">
-      {{#if email}}<span class="rc-info-chip">📧 {{email}}</span>{{/if}}
-      {{#if phone}}<span class="rc-info-chip">📱 {{phone}}</span>{{/if}}
-      {{#if location}}<span class="rc-info-chip">📍 {{location}}</span>{{/if}}
-    </div>
-    
-    <div class="rc-quick-info">
-      {{#if portfolio_url}}
-      <span class="rc-info-chip">
-        🌐 
-        <a href="{{portfolio_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if portfolio_display}}
-            {{portfolio_display}}
-          {{else}}
-            {{#if portfolio_url}}
+        <div class="rc-quick-info">
+          {{#if portfolio_url}}
+          <span class="rc-info-chip">
+            🌐
+            <a href="{{portfolio_url}}" target="_blank" rel="noopener noreferrer">
+              {{#if portfolio_display}}
+              {{portfolio_display}}
+              {{else}}
+              {{#if portfolio_url}}
               {{portfolio_url}}
-            {{else}}
+              {{else}}
               Portfolio
-            {{/if}}
+              {{/if}}
+              {{/if}}
+            </a>
+          </span>
           {{/if}}
-        </a>
-      </span>
-      {{/if}}
-      
-      {{#if linkedin_url}}
-      <span class="rc-info-chip">
-        🔗 
-        <a href="{{linkedin_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if linkedin_display}}
-            {{linkedin_display}}
-          {{else}}
-            {{#if linkedin_url}}
+
+          {{#if linkedin_url}}
+          <span class="rc-info-chip">
+            🔗
+            <a href="{{linkedin_url}}" target="_blank" rel="noopener noreferrer">
+              {{#if linkedin_display}}
+              {{linkedin_display}}
+              {{else}}
+              {{#if linkedin_url}}
               {{linkedin_url}}
-            {{else}}
+              {{else}}
               LinkedIn
-            {{/if}}
+              {{/if}}
+              {{/if}}
+            </a>
+          </span>
           {{/if}}
-        </a>
-      </span>
-      {{/if}}
-      
-      {{#if github_url}}
-      <span class="rc-info-chip">
-        💻 
-        <a href="{{github_url}}" target="_blank" rel="noopener noreferrer">
-          {{#if github_display}}
-            {{github_display}}
-          {{else}}
-            {{#if github_url}}
+
+          {{#if github_url}}
+          <span class="rc-info-chip">
+            💻
+            <a href="{{github_url}}" target="_blank" rel="noopener noreferrer">
+              {{#if github_display}}
+              {{github_display}}
+              {{else}}
+              {{#if github_url}}
               {{github_url}}
-            {{else}}
+              {{else}}
               GitHub
-            {{/if}}
+              {{/if}}
+              {{/if}}
+            </a>
+          </span>
           {{/if}}
-        </a>
-      </span>
-      {{/if}}
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- Main Content Grid -->
   <div class="rc-content-grid">
