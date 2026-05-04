@@ -91,10 +91,10 @@ export default function YourArtifacts() {
 
     // Clear all selections
     const clearSelection = () => {
-        toast({
-            title: "✨ Selection Cleared",
-            description: `Removed ${selectedIds.length} artifact(s) from selection`,
-        });
+        // toast({
+        //     title: "✨ Selection Cleared",
+        //     description: `Removed ${selectedIds.length} artifact(s) from selection`,
+        // });
         setSelectedIds([]);
     };
 
@@ -245,6 +245,27 @@ export default function YourArtifacts() {
 
                             {/* PDF Upload Component */}
                             <div className="mb-16">
+                                {/* <PdfUpload
+                                    variant="default"
+                                    layout="horizontal"
+                                    className="justify-items-center lg:justify-items-start"
+                                    showDragDrop={false}
+                                    firstButtonText="FORGE NEW ARTIFACT"
+                                    secondButtonText="UPLOAD RESUME"
+                                    firstButtonIcon={Sparkles}
+                                    secondButtonIcon={FileUp}
+                                    firstButtonClassName="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:shadow-2xl hover:shadow-purple-500/50 relative overflow-hidden group"
+                                    secondButtonClassName="!bg-[#00f3ff1c] hover:!bg-[#00f3ff30] text-white border border-cyan-500/50"
+                                    onDataExtracted={(data) => {
+                                        console.log('PDF data extracted:', data);
+                                    }}
+                                    onUploadSuccess={(result) => {
+                                        console.log('Upload successful:', result);
+                                    }}
+                                    onUploadError={(error) => {
+                                        console.error('Upload error:', error);
+                                    }}
+                                /> */}
                                 <PdfUpload
                                     userId={user?.id}
                                     showDragDrop={false}

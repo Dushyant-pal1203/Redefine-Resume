@@ -367,10 +367,10 @@ export function useResumes() {
         if (result.success) {
           setResumes((prev) => prev.filter((r) => r.resume_id !== resumeId));
 
-          toast({
-            title: "✅ Deleted",
-            description: "Resume deleted successfully",
-          });
+          // toast({
+          //   title: "✅ Deleted",
+          //   description: "Resume deleted successfully",
+          // });
           return true;
         } else {
           throw new Error(result.error || "Failed to delete resume");
