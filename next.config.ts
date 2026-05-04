@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
-    domains: ["localhost"],
     remotePatterns: [
       {
         protocol: "http",
@@ -18,9 +16,9 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
-    unoptimized: process.env.NODE_ENV === "development", // Disable optimization in development
+    unoptimized: process.env.NODE_ENV === "development",
   },
-  // Add headers to allow CORS
+
   async headers() {
     return [
       {

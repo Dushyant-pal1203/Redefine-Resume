@@ -1,15 +1,20 @@
+// components/FunctionComponent/EmptyState.jsx
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, LogIn } from "lucide-react";
+import { Sparkles, LogIn, Rocket, FileText, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import PdfUpload from "./PdfUpload";
+import { useRouter } from "next/navigation";
 
 export default function EmptyState() {
     const [width, setWidth] = useState(1200);
     const [particles, setParticles] = useState([]);
-    const { isAuthenticated } = useAuth();
+    const [showUploadSection, setShowUploadSection] = useState(false);
+    const { isAuthenticated, user } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         setWidth(window.innerWidth);
@@ -27,12 +32,27 @@ export default function EmptyState() {
     }, []);
 
     const handleLogin = () => {
-        // You can customize this based on your login modal/route
-        // For example, if you have a login modal:
-        // setShowLogin(true);
+        router.push('/login');
+    };
 
-        // Or if you have a login page:
-        window.location.href = '/login';
+    const handleStartFromScratch = () => {
+        router.push('/editor?source=scratch');
+    };
+
+    const handleDataExtracted = (data) => {
+        console.log('PDF data extracted:', data);
+        // Store in session storage for the editor to use
+        sessionStorage.setItem('uploadedResumeData', JSON.stringify(data));
+        // Navigate to editor with the data
+        router.push('/editor?source=upload');
+    };
+
+    const handleUploadSuccess = (result) => {
+        console.log('Upload successful:', result);
+    };
+
+    const handleUploadError = (error) => {
+        console.error('Upload error:', error);
     };
 
     return (
@@ -127,16 +147,17 @@ export default function EmptyState() {
                         transition={{ delay: 0.6 }}
                         className="text-sm text-gray-500 mt-6"
                     >
-                        New here? <button
-                            onClick={() => window.location.href = '/register'}
+                        New here?{" "}
+                        <button
+                            onClick={() => router.push('/register')}
                             className="text-cyan-400 hover:text-cyan-300 transition-colors"
                         >
                             Create an account
                         </button>
                     </motion.p>
                 </>
-            ) : (
-                // Logged in but no resumes state
+            ) : !showUploadSection ? (
+                // Logged in but no resumes - Show initial choices
                 <>
                     <motion.h3
                         initial={{ opacity: 0, y: 10 }}
@@ -163,17 +184,71 @@ export default function EmptyState() {
                         className="flex flex-col sm:flex-row items-center justify-center gap-4"
                     >
                         <Button
-                            onClick={() => document.getElementById('pdf-upload')?.click()}
-                            className="bg-linear-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white px-6 py-3 rounded-lg font-semibold"
+                            onClick={() => setShowUploadSection(true)}
+                            className="bg-linear-to-r from-cyan-600 to-blue-600 hover:opacity-90 text-white px-6 py-3 rounded-lg font-semibold group"
                         >
+                            <FileText className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
                             Upload PDF
                         </Button>
                         <Button
-                            onClick={() => window.location.href = '/editor?source=scratch'}
-                            className="bg-linear-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white px-6 py-3 rounded-lg font-semibold"
+                            onClick={handleStartFromScratch}
+                            className="bg-linear-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white px-6 py-3 rounded-lg font-semibold group"
                         >
+                            <Rocket className="w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform" />
                             Start from Scratch
                         </Button>
+                    </motion.div>
+
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="text-xs text-gray-500 mt-6"
+                    >
+                        Supported: PDF files only. Your data will be automatically parsed.
+                    </motion.p>
+                </>
+            ) : (
+                // Upload section visible
+                <>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="max-w-2xl mx-auto"
+                    >
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-white">Upload Your Resume</h3>
+                            <Button
+                                variant="ghost"
+                                onClick={() => setShowUploadSection(false)}
+                                className="text-gray-400 hover:text-white"
+                            >
+                                ← Back
+                            </Button>
+                        </div>
+
+                        <PdfUpload
+                            variant="card"
+                            layout="vertical"
+                            showDragDrop={true}
+                            showFirstButton={false}
+                            secondButtonText="Select PDF File"
+                            secondButtonClassName="bg-linear-to-r from-cyan-600 to-blue-500 hover:from-cyan-700 hover:to-blue-600"
+                            buttonSize="default"
+                            onDataExtracted={handleDataExtracted}
+                            onUploadSuccess={handleUploadSuccess}
+                            onUploadError={handleUploadError}
+                            animate={true}
+                            navigationParams={{
+                                userId: user?.id,
+                            }}
+                        />
+
+                        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-500">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            Your data is secure and encrypted
+                        </div>
                     </motion.div>
                 </>
             )}
@@ -209,6 +284,23 @@ export default function EmptyState() {
                     />
                 ))}
             </div>
+
+            {/* Animated border gradient */}
+            <motion.div
+                className="absolute inset-0 rounded-[20px] -z-10"
+                animate={{
+                    boxShadow: [
+                        "0 0 0 0 rgba(139, 92, 246, 0)",
+                        "0 0 20px 0 rgba(139, 92, 246, 0.3)",
+                        "0 0 0 0 rgba(139, 92, 246, 0)"
+                    ]
+                }}
+                transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }}
+            />
         </motion.div>
     );
 }

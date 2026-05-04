@@ -307,7 +307,7 @@ export default function PdfUpload({
             {showDragDrop && (
                 <div
                     className={`
-                        relative mb-8 p-8 border-2 border-dashed rounded-xl transition-all duration-300
+                        relative mb-8 p-8 border-2 border-dashed rounded-xl transition-all duration-300 bg-transparent
                         ${isDragging
                             ? 'border-purple-500 bg-purple-500/10 scale-105'
                             : 'border-gray-700 hover:border-gray-600'

@@ -89,6 +89,27 @@ export default function HeroSection() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.6 }}
                     >
+                        {/* <PdfUpload
+                            variant="default"
+                            layout="horizontal"
+                            className="justify-items-center lg:justify-items-start"
+                            showDragDrop={false}
+                            firstButtonText="FORGE NEW ARTIFACT"
+                            secondButtonText="UPLOAD RESUME"
+                            secondButtonIcon={FileInput}
+                            firstButtonIcon={Sparkles}
+                            firstButtonClassName="group relative overflow-hidden bg-linear-to-r from-purple-600 via-pink-500 to-cyan-500 hover:shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:-translate-y-0.5"
+                            secondButtonClassName="!bg-white/5 backdrop-blur-sm hover:!bg-white/15 border border-purple-500/40 text-white transition-all duration-300 hover:border-cyan-400/60"
+                            onDataExtracted={(data) => {
+                                console.log('PDF data extracted:', data);
+                            }}
+                            onUploadSuccess={(result) => {
+                                console.log('Upload successful:', result);
+                            }}
+                            onUploadError={(error) => {
+                                console.error('Upload error:', error);
+                            }}
+                        /> */}
                         <PdfUpload
                             userId={user?.id}
                             className="justify-items-center lg:justify-items-start"
